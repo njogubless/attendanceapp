@@ -1,13 +1,13 @@
 import 'package:attendanceapp/Models/user_models.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/login_Screen.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomePage extends ConsumerWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
