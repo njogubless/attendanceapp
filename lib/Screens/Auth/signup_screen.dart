@@ -1,5 +1,5 @@
 // lib/screens/auth/signup_screen.dart
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/login_Screen.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,7 +10,7 @@ class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
 class _SignupScreenState extends State<SignupScreen> {

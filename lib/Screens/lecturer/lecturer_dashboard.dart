@@ -1,10 +1,12 @@
 // lib/screens/lecturer/lecturer_dashboard.dart
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/login_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 
 class LecturerDashboard extends StatelessWidget {
+  const LecturerDashboard({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,4 +1,4 @@
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/login_Screen.dart';
 import 'package:attendanceapp/Screens/homepage.dart';
 import 'package:attendanceapp/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
