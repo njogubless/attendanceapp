@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomePage extends ConsumerWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,7 +16,7 @@ class HomePage extends ConsumerWidget {
     return userDataAsync.when(
       data: (userData) {
         if (userData == null) {
-          return LoginScreen();
+          return const LoginScreen();
         }
         return _buildHomePage(context, userData, ref);
       },
@@ -51,7 +51,7 @@ class HomePage extends ConsumerWidget {
               // Add logout logic
               ref.read(authNotifierProvider.notifier).signOut();
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => LoginScreen()),
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
           ),
@@ -202,7 +202,7 @@ class HomePage extends ConsumerWidget {
             onTap: () {
               ref.read(authNotifierProvider.notifier).signOut();
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) =>  LoginScreen()),
+                MaterialPageRoute(builder: (_) =>  const LoginScreen()),
               );
             },
           ),
