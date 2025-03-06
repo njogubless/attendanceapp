@@ -1,5 +1,6 @@
 // lib/screens/auth/login_screen.dart
 import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
+import 'package:attendanceapp/Screens/homepage.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
