@@ -1,64 +1,55 @@
-// lib/screens/auth/login_screen.dart
+import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
 import 'package:attendanceapp/Screens/homepage.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class LoginScreen extends ConsumerStatefulWidget {
+  final Function toggleView;
+  const LoginScreen({super.key, required this.toggleView});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
-
   String email = '';
   String password = '';
-
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      
-      try {
-        // Authenticate user
-        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
-        // Fetch user role from Firestore
-        DocumentSnapshot userDoc = await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
-
-        // Navigate to appropriate dashboard
-        String role = userDoc['role'];
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => role == 'lecturer' 
-              ? LecturerDashboard() 
-              : StudentDashboard(),
-          ),
-        );
-      } on FirebaseAuthException catch (e) {
-        // Handle login errors
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Login failed')),
-        );
-      }
-    }
-  }
+  String error = '';
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+
+    if (authState is AsyncLoading && !loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (authState is AsyncError && !loading) {
+      error = authState.error.toString();
+    }
+
+    // Navigate based on role after successful login
+    if (authState is AsyncData && authState.value != null && !loading) {
+      // Use a microtask to avoid building during build
+      Future.microtask(() {
+        final userRole = authState.value!.role;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => userRole == 'lecturer' 
+              ? LecturerDashboard() 
+              : userRole == 'admin'
+                ? const HomePage() // Replace with AdminDashboard
+                : StudentDashboard(),
+          ),
+        );
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: Padding(
@@ -76,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
                   return null;
                 },
-                onSaved: (value) => email = value!,
+                onChanged: (value) => email = value,
               ),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Password'),
@@ -87,21 +78,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
                   return null;
                 },
-                onSaved: (value) => password = value!,
+                onChanged: (value) => password = value,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _login,
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    setState(() {
+                      loading = true;
+                      error = '';
+                    });
+
+                    // Use the AuthNotifier from Riverpod to handle sign-in
+                    await ref
+                        .read(authNotifierProvider.notifier)
+                        .signIn(email, password);
+
+                    // Check for errors after sign-in attempt
+                    final currentState = ref.read(authNotifierProvider);
+                    if (currentState is AsyncError) {
+                      setState(() {
+                        loading = false;
+                        error = 'Login failed: ${currentState.error}';
+                      });
+                    }
+                  }
+                },
                 child: const Text('Login'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => SignupScreen()),
-                  );
+                  widget.toggleView();
                 },
                 child: const Text('Don\'t have an account? Sign Up'),
               ),
+              if (error.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    error,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
             ],
           ),
         ),

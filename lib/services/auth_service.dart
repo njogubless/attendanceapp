@@ -25,7 +25,7 @@ class AuthService {
         name: name,
         email: email,
         role: role,
-        createdAt: Timestamp.now(),
+        status: 'pending', 
       );
 
       // Store additional user info in Firestore

@@ -54,4 +54,12 @@ class AttendanceModel {
       'lecturerComments': lecturerComments,
     };
   }
+
+  bool get approved{
+    return status == AttendanceStatus.approved;
+  }
+
+  DateTime get timestamp{
+    return attendanceDate.toDate();
+  }
 }

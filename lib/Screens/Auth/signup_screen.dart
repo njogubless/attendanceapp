@@ -1,141 +1,295 @@
-// lib/screens/auth/signup_screen.dart
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+// Changes to SignupScreen to improve role selection and navigation
+import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:attendanceapp/core/constants/Color/color_constants.dart';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+enum Role { admin, lecturer, student }
+
+class SignupScreen extends ConsumerStatefulWidget {
+  final Function toggleView;
+  const SignupScreen({super.key, required this.toggleView});
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _RegisterClientState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
+class _RegisterClientState extends ConsumerState<SignupScreen> {
+  final _formkey = GlobalKey<FormState>();
+  bool loading = false;
 
+  String name = '';
   String email = '';
   String password = '';
-  String name = '';
   String role = 'student'; // Default role
+  Role selectedRole = Role.student; // Default selected role
 
-  Future<void> _signup() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      try {
-        // Create user with email and password
-        UserCredential userCredential =
-            await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
-        // Store additional user information in Firestore
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'name': name,
-          'email': email,
-          'role': role,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // Navigate based on role
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) =>
-                role == 'lecturer' ? LecturerDashboard() : StudentDashboard(),
-          ),
-        );
-      } on FirebaseAuthException catch (e) {
-        // Handle signup errors
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Signup failed')),
-        );
-      }
-    }
-  }
+  String error = '';
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+
+    if (authState is AsyncLoading && !loading) {
+      return const Center(child: CircularProgressIndicator()); // Replace with your Loading widget
+    }
+
+    if (authState is AsyncError && !loading) {
+      error = authState.error.toString();
+    }
+
+    // Navigate based on role after successful registration
+    if (authState is AsyncData && authState.value != null && !loading) {
+      // Use a microtask to avoid building during build
+      Future.microtask(() {
+        final userRole = authState.value!.role;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => userRole == 'lecturer' 
+              ? LecturerDashboard() 
+              : StudentDashboard(),
+          ),
+        );
+      });
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Signup')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-                onSaved: (value) => name = value!,
+      backgroundColor: white,
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        backgroundColor: white,
+        elevation: 0.0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Stack(
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.fromLTRB(15.0, 0.0, 0.0, 0.0),
+                child: const Text('Do',
+                    style:
+                        TextStyle(fontSize: 80.0, fontWeight: FontWeight.bold)),
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || !value.contains('@')) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-                onSaved: (value) => email = value!,
+              Container(
+                padding: const EdgeInsets.fromLTRB(16.0, 70.0, 0.0, 0.0),
+                child: const Text('Sign Up',
+                    style:
+                        TextStyle(fontSize: 80.0, fontWeight: FontWeight.bold)),
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-                onSaved: (value) => password = value!,
-              ),
-              DropdownButtonFormField<String>(
-                value: role,
-                decoration: const InputDecoration(labelText: 'Role'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'student',
-                    child: Text('Student'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'lecturer',
-                    child: Text('Lecturer'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    role = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _signup,
-                child: const Text('Sign Up'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                  );
-                },
-                child: const Text('Already have an account? Login'),
-              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(310.0, 70.0, 0.0, 0.0),
+                child: const Text('.',
+                    style: TextStyle(
+                      fontSize: 80.0,
+                      fontWeight: FontWeight.bold,
+                      color: lightBlue,
+                    )),
+              )
             ],
           ),
-        ),
+          Container(
+              padding: const EdgeInsets.only(top: 5.0, left: 20.0, right: 20.0),
+              child: Form(
+                key: _formkey,
+                child: Column(
+                  children: <Widget>[
+                    TextFormField(
+                      decoration: const InputDecoration(
+                          labelText: 'YOUR NAME',
+                          labelStyle: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.bold,
+                              color: darkGrey),
+                          focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: lightBlue))),
+                      validator: (val) => val!.trim().isEmpty
+                          ? 'Enter a name consisting of 1+ characters'
+                          : null,
+                      onChanged: (val) {
+                        setState(() {
+                          name = val.trim();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20.0),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                          labelText: 'EMAIL',
+                          labelStyle: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.bold,
+                              color: darkGrey),
+                          focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: lightBlue))),
+                      validator: (val) => EmailValidator.validate(val!.trim())
+                          ? null
+                          : 'Enter a valid email address',
+                      onChanged: (val) {
+                        setState(() {
+                          email = val.trim();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20.0),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                          labelText: 'PASSWORD',
+                          labelStyle: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.bold,
+                              color: darkGrey),
+                          focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: lightBlue))),
+                      validator: (val) => val!.trim().length < 6
+                          ? 'Password less than 6 characters long'
+                          : null,
+                      onChanged: (val) {
+                        setState(() {
+                          password = val.trim();
+                        });
+                      },
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 20.0),
+                    DropdownButtonFormField<Role>(
+                      value: selectedRole, // Set initial value to prevent null
+                      decoration: const InputDecoration(
+                          labelText: 'ROLE',
+                          labelStyle: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.bold,
+                              color: darkGrey),
+                          focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: lightBlue))),
+                      items: const [
+                        DropdownMenuItem(
+                          value: Role.admin,
+                          child: Text('Admin'),
+                        ),
+                        DropdownMenuItem(
+                          value: Role.lecturer,
+                          child: Text('Lecturer'),
+                        ),
+                        DropdownMenuItem(
+                          value: Role.student,
+                          child: Text('Student'),
+                        ),
+                      ],
+                      onChanged: (item) {
+                        setState(() {
+                          selectedRole = item!;
+                          switch (item) {
+                            case Role.student:
+                              role = 'student';
+                              break;
+                            case Role.admin:
+                              role = 'admin';
+                              break;
+                            case Role.lecturer:
+                              role = 'lecturer';
+                              break;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 45.0),
+                    SizedBox(
+                      height: 40.0,
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (_formkey.currentState!.validate()) {
+                            setState(() {
+                              loading = true;
+                              error = '';
+                            });
+
+                            // Use the AuthNotifier from Riverpod to handle sign-up
+                            await ref
+                                .read(authNotifierProvider.notifier)
+                                .signUp(
+                                  email: email,
+                                  password: password,
+                                  name: name,
+                                  role: role,
+                                );
+
+                            // Check for errors after sign-up attempt
+                            final currentState = ref.read(authNotifierProvider);
+                            if (currentState is AsyncError) {
+                              setState(() {
+                                loading = false;
+                                error =
+                                    'Registration failed: ${currentState.error}';
+                              });
+                            }
+                          }
+                        },
+                        child: Material(
+                          borderRadius: BorderRadius.circular(20.0),
+                          shadowColor: Colors.blueAccent,
+                          color: Colors.blue,
+                          elevation: 7.0,
+                          child: const Center(
+                            child: Text(
+                              'REGISTER',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Montserrat'),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                  ],
+                ),
+              )),
+          const SizedBox(height: 15.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const Text(
+                'Already have an account?',
+                style: TextStyle(fontFamily: 'Montserrat'),
+              ),
+              const SizedBox(width: 5.0),
+              InkWell(
+                onTap: () {
+                  widget.toggleView();
+                },
+                child: const Text(
+                  'Sign In',
+                  style: TextStyle(
+                      color: lightBlue,
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline),
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 15.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                error,
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 5.0),
+            ],
+          )
+        ],
       ),
     );
   }

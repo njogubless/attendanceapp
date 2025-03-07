@@ -6,7 +6,7 @@ class UserModel {
   final String email;
   final String role;
   final List<String>? courses;
-  final Timestamp? createdAt;
+  String status;
 
   UserModel({
     required this.id,
@@ -14,7 +14,7 @@ class UserModel {
     required this.email,
     required this.role,
     this.courses,
-    this.createdAt,
+    this.status = 'pending',
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -24,8 +24,8 @@ class UserModel {
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       role: data['role'] ?? '',
+      status: data['status'] ?? 'pending',
       courses: List<String>.from(data['courses'] ?? []),
-      createdAt: data['createdAt'],
     );
   }
 
@@ -35,7 +35,7 @@ class UserModel {
       'email': email,
       'role': role,
       'courses': courses,
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'status': status,
     };
   }
 }
