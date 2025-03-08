@@ -52,6 +52,10 @@ class AuthService {
           .doc(userCredential.user!.uid)
           .get();
 
+      if (!userDoc.exists) {
+        throw Exception('User data not found in database. Please contact support or register again.'); 
+      }
+
       return UserModel.fromFirestore(userDoc);
     } catch (e) {
       rethrow;

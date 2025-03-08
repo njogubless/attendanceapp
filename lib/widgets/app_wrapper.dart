@@ -35,7 +35,7 @@ class AppWrapper extends ConsumerWidget {
                 case 'lecturer':
                   return const LecturerDashboard();
                 case 'admin':
-                  return const SignupScreen(); // Replace with AdminDashboard
+                  return SignupScreen(toggleView: () {}); // Replace with AdminDashboard
                 case 'student':
                 default:
                   return StudentDashboard();

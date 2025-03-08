@@ -24,9 +24,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
-    if (authState is AsyncLoading && !loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // if (authState is AsyncLoading && !loading) {
+    //   return const Center(child: CircularProgressIndicator());
+    // }
 
     if (authState is AsyncError && !loading) {
       error = authState.error.toString();

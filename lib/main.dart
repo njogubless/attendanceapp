@@ -1,4 +1,5 @@
 import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/auth_wrapper.dart';
 import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
 import 'package:attendanceapp/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const SignupScreen(),
+      home: const AuthenticationWrapper(),
     );
   }
 }
