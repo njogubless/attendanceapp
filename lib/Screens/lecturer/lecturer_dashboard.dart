@@ -1,3 +1,4 @@
+import 'package:attendanceapp/Models/attendance_model.dart';
 import 'package:attendanceapp/Providers/attendance_providers.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/Providers/course_providers.dart';
@@ -11,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 class LecturerDashboard extends ConsumerStatefulWidget {
-  const LecturerDashboard({Key? key}) : super(key: key);
+  const LecturerDashboard({super.key});
 
   @override
   ConsumerState<LecturerDashboard> createState() => _LecturerDashboardState();
@@ -90,7 +91,7 @@ class _LecturerDashboardState extends ConsumerState<LecturerDashboard> {
 }
 
 class CoursesTab extends ConsumerStatefulWidget {
-  const CoursesTab({Key? key}) : super(key: key);
+  const CoursesTab({super.key});
 
   @override
   ConsumerState<CoursesTab> createState() => _CoursesTabState();
@@ -277,10 +278,10 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
                                       id: docRef
                                           .id, // Use the generated document ID
                                       name: _courseName,
-                                      lecturerId: userData.id, 
+                                      lecturerId: userData.id,
                                       courseCode: _courseCode,
-                                      description: _description ,
-                                      lecturerName: userData.name, 
+                                      description: _description,
+                                      lecturerName: userData.name,
                                       // Optional parameters don't need to be explicitly set if using defaults
                                     );
 
@@ -328,11 +329,16 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
 }
 
 class AttendanceTab extends ConsumerWidget {
-  const AttendanceTab({Key? key}) : super(key: key);
+  const AttendanceTab({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pendingAttendance = ref.watch(pendingAttendanceProvider);
+    final user = ref.watch(userDataProvider).value;
+    final lecturerId = user?.id ?? '';
+    final pendingAttendance =
+        ref.watch(pendingAttendanceForLecturerProvider(lecturerId));
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -368,7 +374,8 @@ class AttendanceTab extends ConsumerWidget {
                             Text('Course: ${attendance.courseName}'),
                             Text(
                                 'Date: ${DateFormat('MMM dd, yyyy').format(attendance.date)}'),
-                            Text('Status: ${attendance.status}'),
+                            Text(
+                                'Status: ${attendance.status.toString().split('.').last}'),
                           ],
                         ),
                         trailing: Row(
@@ -421,7 +428,7 @@ class AttendanceTab extends ConsumerWidget {
 }
 
 class ProfileTab extends ConsumerWidget {
-  const ProfileTab({Key? key}) : super(key: key);
+  const ProfileTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -510,7 +517,7 @@ class ProfileTab extends ConsumerWidget {
 class StudentListScreen extends ConsumerWidget {
   final CourseModel course;
 
-  const StudentListScreen({Key? key, required this.course}) : super(key: key);
+  const StudentListScreen({super.key, required this.course});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -580,92 +587,89 @@ class StudentListScreen extends ConsumerWidget {
 class CourseDetailScreen extends ConsumerWidget {
   final CourseModel course;
 
-  const CourseDetailScreen({Key? key, required this.course}) : super(key: key);
+  const CourseDetailScreen({super.key, required this.course});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final attendanceStream = ref.watch(courseAttendanceProvider(course.id));
+    final attendanceStream = ref.watch(attendanceForCourseProvider(course.id));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(course.name),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              course.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Course Code: ${course.courseCode}',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            if (course.description.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Description:',
+        appBar: AppBar(
+          title: Text(course.name),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                course.name,
                 style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(course.description),
-            ],
-            const SizedBox(height: 24),
-            const Text(
-              'Attendance History',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: attendanceStream.when(
-                data: (attendanceList) {
-                  if (attendanceList.isEmpty) {
-                    return const Center(
-                      child: Text('No attendance records yet'),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: attendanceList.length,
-                    itemBuilder: (context, index) {
-                      final attendance = attendanceList[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text(attendance.studentName),
-                          subtitle: Text(DateFormat('MMM dd, yyyy')
-                              .format(attendance.date)),
-                          trailing: _getStatusIcon(attendance.status),
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error: $error')),
+              Text(
+                'Course Code: ${course.courseCode}',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
-            ),
-          ],
-        ),
-      )
-    );
+              if (course.description.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Description:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(course.description),
+              ],
+              const SizedBox(height: 24),
+              const Text(
+                'Attendance History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: attendanceStream.when(
+                  data: (attendanceList) {
+                    if (attendanceList.isEmpty) {
+                      return const Center(
+                        child: Text('No attendance records yet'),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: attendanceList.length,
+                      itemBuilder: (context, index) {
+                        final attendance = attendanceList[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(attendance.studentName),
+                            subtitle: Text(DateFormat('MMM dd, yyyy')
+                                .format(attendance.date)),
+                            trailing: _getStatusIcon(attendance.status),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error: $error')),
+                ),
+              ),
+            ],
+          ),
+        ));
   }
 
-  Widget _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'approved':
+  Widget _getStatusIcon(AttendanceStatus status) {
+    switch (status) {
+      case AttendanceStatus.approved:
         return const Icon(Icons.check_circle, color: Colors.green);
-      case 'rejected':
+      case AttendanceStatus.rejected:
         return const Icon(Icons.cancel, color: Colors.red);
-      case 'pending':
-        return const Icon(Icons.hourglass_empty, color: Colors.orange);
+      case AttendanceStatus.pending:
       default:
-        return const Icon(Icons.question_mark, color: Colors.grey);
+        return const Icon(Icons.access_time, color: Colors.orange);
     }
   }
 }
-
-

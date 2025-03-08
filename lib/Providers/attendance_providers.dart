@@ -27,10 +27,10 @@ final attendanceNotifierProvider = StateNotifierProvider<AttendanceNotifier, Asy
 class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>> {
   final AttendanceService _attendanceService;
 
-  AttendanceNotifier(this._attendanceService) : super(AsyncValue.loading());
+  AttendanceNotifier(this._attendanceService) : super(const AsyncValue.loading());
 
   Future<void> submitAttendance(AttendanceModel attendance) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       await _attendanceService.submitAttendance(attendance);
       final attendances = await _attendanceService.getAttendances().first;
@@ -41,7 +41,7 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
   }
 
   Future<void> approveAttendance(String attendanceId) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       await _attendanceService.approveAttendance(attendanceId);
       final attendances = await _attendanceService.getAttendances().first;
@@ -53,7 +53,7 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
   
   // Add methods to fetch pending attendance for lecturer
   Future<void> fetchPendingAttendanceForLecturer(String lecturerId) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       final pendingAttendances = await _attendanceService.getPendingAttendanceForLecturer(lecturerId);
       state = AsyncValue.data(pendingAttendances);
@@ -64,7 +64,7 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
   
   // Add methods to fetch attendance for a specific course
   Future<void> fetchAttendanceForCourse(String courseId) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       final courseAttendances = await _attendanceService.getAttendanceForCourse(courseId);
       state = AsyncValue.data(courseAttendances);

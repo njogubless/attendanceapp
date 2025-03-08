@@ -11,8 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum Role { admin, lecturer, student }
 
 class SignupScreen extends ConsumerStatefulWidget {
-  final Function toggleView;
-  const SignupScreen({super.key, required this.toggleView});
+  //final Function toggleView;
+  const SignupScreen({super.key,});
 
   @override
   ConsumerState<SignupScreen> createState() => _RegisterClientState();
@@ -50,7 +50,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => userRole == 'lecturer' 
-              ? LecturerDashboard() 
+              ? const LecturerDashboard() 
               : StudentDashboard(),
           ),
         );
@@ -262,7 +262,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
               const SizedBox(width: 5.0),
               InkWell(
                 onTap: () {
-                  widget.toggleView();
+                  //widget.toggleView();
                 },
                 child: const Text(
                   'Sign In',

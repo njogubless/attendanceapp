@@ -66,4 +66,48 @@ class AttendanceService {
               .toList(),
         );
   }
+
+// Add these methods to your AttendanceService class
+
+Future<List<AttendanceModel>> getPendingAttendanceForLecturer(String lecturerId) async {
+  try {
+    final querySnapshot = await _firestore
+        .collection('attendances')
+        .where('lecturerId', isEqualTo: lecturerId)
+        .where('status', isEqualTo: AttendanceStatus.pending.toString().split('.').last)
+        .get();
+        
+    return querySnapshot.docs
+        .map((doc) => AttendanceModel.fromFirestore(doc))
+        .toList();
+  } catch (e) {
+    rethrow;
+  }
+}
+
+Future<List<AttendanceModel>> getAttendanceForCourse(String courseId) async {
+  try {
+    final querySnapshot = await _firestore
+        .collection('attendances')
+        .where('courseId', isEqualTo: courseId)
+        .get();
+        
+    return querySnapshot.docs
+        .map((doc) => AttendanceModel.fromFirestore(doc))
+        .toList();
+  } catch (e) {
+    rethrow;
+  }
+}
+
+Future<void> updateAttendanceStatus(String attendanceId, String status) async {
+  try {
+    await _firestore.collection('attendances').doc(attendanceId).update({
+      'status': status,
+    });
+  } catch (e) {
+    rethrow;
+  }
+}
+
 }
