@@ -1,4 +1,6 @@
+import 'package:attendanceapp/Models/attendance_model.dart';
 import 'package:attendanceapp/Models/course_model.dart';
+import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/Models/user_models.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/services/course_service.dart';
@@ -9,12 +11,13 @@ final courseServiceProvider = Provider<CourseService>((ref) {
   return CourseService();
 });
 
+// General courses provider - lists all available courses
 final coursesProvider = StreamProvider<List<CourseModel>>((ref) {
   return ref.read(courseServiceProvider).getCourses();
 });
 
-// Add the missing provider for lecturer courses
-final lecturerCoursesStreamProvider = StreamProvider<List<CourseModel>>((ref) {
+// Provider for lecturer-specific courses
+final lecturerCoursesProvider = StreamProvider<List<CourseModel>>((ref) {
   final user = ref.watch(userDataProvider).value;
   if (user == null) return Stream.value([]);
   
@@ -27,7 +30,33 @@ final lecturerCoursesStreamProvider = StreamProvider<List<CourseModel>>((ref) {
           .toList());
 });
 
-// Add the missing provider for students in a course
+// Provider to track student's enrolled courses
+final studentEnrolledCoursesProvider = StreamProvider<List<CourseModel>>((ref) {
+  final user = ref.watch(userDataProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  return FirebaseFirestore.instance
+      .collection('enrollments')
+      .where('studentId', isEqualTo: user.id)
+      .snapshots()
+      .asyncMap((snapshot) async {
+        List<CourseModel> enrolledCourses = [];
+        for (var doc in snapshot.docs) {
+          final courseId = doc.data()['courseId'];
+          final courseDoc = await FirebaseFirestore.instance
+              .collection('courses')
+              .doc(courseId)
+              .get();
+          
+          if (courseDoc.exists) {
+            enrolledCourses.add(CourseModel.fromFirestore(courseDoc));
+          }
+        }
+        return enrolledCourses;
+      });
+});
+
+// Provider to get students enrolled in a specific course
 final courseStudentsProvider = StreamProvider.family<List<UserModel>, String>((ref, courseId) {
   return FirebaseFirestore.instance
       .collection('enrollments')
@@ -50,32 +79,183 @@ final courseStudentsProvider = StreamProvider.family<List<UserModel>, String>((r
       });
 });
 
-final courseNotifierProvider = StateNotifierProvider<CourseNotifier, AsyncValue<List<CourseModel>>>((ref) {
+// Provider to get units for a specific course
+final courseUnitsProvider = StreamProvider.family<List<UnitModel>, String>((ref, courseId) {
+  return FirebaseFirestore.instance
+      .collection('units')
+      .where('courseId', isEqualTo: courseId)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => UnitModel.fromFirestore(doc))
+          .toList());
+});
+
+// Provider to get all units enrolled by a student
+final studentEnrolledUnitsProvider = StreamProvider<List<UnitModel>>((ref) {
+  final user = ref.watch(userDataProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  return FirebaseFirestore.instance
+      .collection('units')
+      .where('enrolledStudents', arrayContains: user.id)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => UnitModel.fromFirestore(doc))
+          .toList());
+});
+
+// Provider to track a student's attendance records
+final studentAttendanceProvider = StreamProvider<List<AttendanceModel>>((ref) {
+  final user = ref.watch(userDataProvider).value;
+  if (user == null) return Stream.value([]);
+  
+  return FirebaseFirestore.instance
+      .collection('attendance')
+      .where('studentId', isEqualTo: user.id)
+      .orderBy('attendanceDate', descending: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => AttendanceModel.fromFirestore(doc))
+          .toList());
+});
+
+// Course state notifier provider
+final courseNotifierProvider = StateNotifierProvider<CourseNotifier, AsyncValue<void>>((ref) {
   return CourseNotifier(ref.read(courseServiceProvider));
 });
 
-class CourseNotifier extends StateNotifier<AsyncValue<List<CourseModel>>> {
-  final CourseService _courseService;
+// Attendance state notifier provider
+final attendanceNotifierProvider = StateNotifierProvider<AttendanceNotifier, AsyncValue<void>>((ref) {
+  return AttendanceNotifier(FirebaseFirestore.instance);
+});
 
-  CourseNotifier(this._courseService) : super(AsyncValue.loading());
+class CourseNotifier extends StateNotifier<AsyncValue<void>> {
+  final CourseService _courseService;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  CourseNotifier(this._courseService) : super(const AsyncValue.data(null));
 
   Future<void> addCourse(CourseModel course) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       await _courseService.addCourse(course);
-      final courses = await _courseService.getCourses().first;
-      state = AsyncValue.data(courses);
+      state = const AsyncValue.data(null);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
   Future<void> enrollStudent(String courseId, String studentId) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
-      await _courseService.enrollStudent(courseId, studentId);
-      final courses = await _courseService.getCourses().first;
-      state = AsyncValue.data(courses);
+      // Create enrollment record
+      await _firestore.collection('enrollments').add({
+        'courseId': courseId,
+        'studentId': studentId,
+        'enrollmentDate': Timestamp.now(),
+      });
+
+      // Also update units in this course to include the student
+      final unitDocs = await _firestore
+          .collection('units')
+          .where('courseId', isEqualTo: courseId)
+          .get();
+      
+      // Batch write to update all units
+      final batch = _firestore.batch();
+      for (var doc in unitDocs.docs) {
+        batch.update(doc.reference, {
+          'enrolledStudents': FieldValue.arrayUnion([studentId])
+        });
+      }
+      await batch.commit();
+      
+      state = const AsyncValue.data(null);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<void> unenrollStudent(String courseId, String studentId) async {
+    state = const AsyncValue.loading();
+    try {
+      // Find and delete enrollment record
+      final enrollmentQuery = await _firestore
+          .collection('enrollments')
+          .where('courseId', isEqualTo: courseId)
+          .where('studentId', isEqualTo: studentId)
+          .get();
+      
+      // Delete all matching enrollment documents
+      final batch = _firestore.batch();
+      for (var doc in enrollmentQuery.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      // Also update units to remove student
+      final unitDocs = await _firestore
+          .collection('units')
+          .where('courseId', isEqualTo: courseId)
+          .get();
+      
+      for (var doc in unitDocs.docs) {
+        batch.update(doc.reference, {
+          'enrolledStudents': FieldValue.arrayRemove([studentId])
+        });
+      }
+      
+      await batch.commit();
+      state = const AsyncValue.data(null);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+}
+
+class AttendanceNotifier extends StateNotifier<AsyncValue<void>> {
+  final FirebaseFirestore _firestore;
+
+  AttendanceNotifier(this._firestore) : super(const AsyncValue.data(null));
+
+  Future<void> submitAttendance(AttendanceModel attendance) async {
+    state = const AsyncValue.loading();
+    try {
+      // Create a document reference with auto-generated ID
+      final docRef = _firestore.collection('attendance').doc();
+      
+      // Update the attendance model with the generated ID
+      final updatedAttendance = attendance.copyWith(
+        id: docRef.id,
+        attendanceDate: Timestamp.now(),
+        status: AttendanceStatus.pending
+      );
+      
+      // Set the document data
+      await docRef.set(updatedAttendance.toMap());
+      
+      state = const AsyncValue.data(null);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+  
+  Future<void> updateAttendanceStatus(String attendanceId, AttendanceStatus status, String? lecturerComments) async {
+    state = const AsyncValue.loading();
+    try {
+      Map<String, dynamic> updateData = {
+        'status': status.toString(),
+      };
+      
+      if (lecturerComments != null) {
+        updateData['lecturerComments'] = lecturerComments;
+      }
+      
+      await _firestore
+          .collection('attendance')
+          .doc(attendanceId)
+          .update(updateData);
+      
+      state = const AsyncValue.data(null);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }

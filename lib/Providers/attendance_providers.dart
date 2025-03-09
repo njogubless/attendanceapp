@@ -20,7 +20,7 @@ final attendanceForCourseProvider = FutureProvider.family<List<AttendanceModel>,
   return ref.read(attendanceServiceProvider).getAttendanceForCourse(courseId);
 });
 
-final attendanceNotifierProvider = StateNotifierProvider<AttendanceNotifier, AsyncValue<List<AttendanceModel>>>((ref) {
+final attendanceManagerProvider = StateNotifierProvider<AttendanceNotifier, AsyncValue<List<AttendanceModel>>>((ref) {
   return AttendanceNotifier(ref.read(attendanceServiceProvider));
 });
 

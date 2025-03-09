@@ -1,6 +1,4 @@
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
 import 'package:attendanceapp/Screens/Auth/auth_wrapper.dart';
-import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
 import 'package:attendanceapp/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +9,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp( const ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -27,8 +25,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const AuthenticationWrapper(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
-
-

@@ -64,6 +64,17 @@ class AttendanceModel {
     };
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'studentId': studentId,
+      'courseName': courseName,
+      'attendanceDate': attendanceDate,
+      'status': status.toString(),
+      'lecturerComments': lecturerComments,
+    };
+  }
+
   // Fix the date getter issue - add this getter
   DateTime get date {
     return attendanceDate.toDate();
@@ -75,5 +86,32 @@ class AttendanceModel {
 
   DateTime get timestamp {
     return attendanceDate.toDate();
+  }
+
+
+  AttendanceModel copyWith({
+    String? id,
+    String? studentId,
+    String? studentName,
+    String? unitId,
+    String? courseName,
+    String? lecturerId,
+    String? venue,
+    Timestamp? attendanceDate,
+    AttendanceStatus? status,
+    String? lecturerComments,
+  }) {
+    return AttendanceModel(
+      id: id ?? this.id,
+      studentId: studentId ?? this.studentId,
+      studentName: studentName ?? this.studentName,
+      unitId: unitId ?? this.unitId,
+      courseName: courseName ?? this.courseName,
+      lecturerId: lecturerId ?? this.lecturerId,
+      venue: venue ?? this.venue,
+      attendanceDate: attendanceDate ?? this.attendanceDate,
+      status: status ?? this.status,
+      lecturerComments: lecturerComments ?? this.lecturerComments,
+    );
   }
 }

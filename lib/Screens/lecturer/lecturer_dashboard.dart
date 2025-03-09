@@ -106,7 +106,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final coursesStream = ref.watch(lecturerCoursesStreamProvider);
+    final coursesStream = ref.watch(lecturerCoursesProvider);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
