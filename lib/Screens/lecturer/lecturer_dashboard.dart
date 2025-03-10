@@ -114,7 +114,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Your Courses',
+            'Your Units',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -123,7 +123,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
               data: (courses) {
                 if (courses.isEmpty) {
                   return const Center(
-                    child: Text('No courses yet. Add your first course!'),
+                    child: Text('No Units yet. Add your first Unit!'),
                   );
                 }
 
@@ -220,7 +220,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Add New Course'),
+                  title: const Text('Add New Unit'),
                   content: Form(
                     key: _formKey,
                     child: Column(
@@ -238,7 +238,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
                           decoration:
                               const InputDecoration(labelText: 'Course Code'),
                           validator: (value) => value == null || value.isEmpty
-                              ? 'Please enter course code'
+                              ? 'Please enter Unit code'
                               : null,
                           onChanged: (value) => _courseCode = value,
                         ),
@@ -296,7 +296,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
                                         .showSnackBar(
                                       const SnackBar(
                                           content: Text(
-                                              'Course added successfully')),
+                                              'Unit added successfully')),
                                     );
                                   }
                                 } catch (e) {
@@ -306,7 +306,7 @@ class _CoursesTabState extends ConsumerState<CoursesTab> {
                                       .showSnackBar(
                                     SnackBar(
                                         content: Text(
-                                            'Error adding course: ${e.toString()}')),
+                                            'Error adding Unit: ${e.toString()}')),
                                   );
                                 } finally {
                                   setState(() {

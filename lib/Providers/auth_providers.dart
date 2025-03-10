@@ -26,7 +26,7 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User
 class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
   final AuthService _authService;
 
-  AuthNotifier(this._authService) : super(AsyncValue.loading());
+  AuthNotifier(this._authService) : super(const AsyncValue.loading());
 
   Future<void> signUp({
     required String email, 
@@ -34,7 +34,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
     required String name, 
     required String role
   }) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       final user = await _authService.signUp(
         email: email, 
@@ -49,7 +49,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
   }
 
   Future<void> signIn(String email, String password) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       final user = await _authService.signIn(email, password);
       state = AsyncValue.data(user);

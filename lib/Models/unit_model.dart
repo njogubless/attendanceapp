@@ -7,6 +7,7 @@ class UnitModel {
   final String lecturerId;
   final List<String> enrolledStudents;
   final Timestamp? createdAt;
+  final String description;
 
   UnitModel({
     required this.id,
@@ -15,6 +16,7 @@ class UnitModel {
     required this.lecturerId,
     this.enrolledStudents = const [],
     this.createdAt,
+    this.description = '',
   });
 
   factory UnitModel.fromFirestore(DocumentSnapshot doc) {
@@ -36,6 +38,38 @@ class UnitModel {
       'lecturerId': lecturerId,
       'enrolledStudents': enrolledStudents,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+    };
+  }
+
+  UnitModel copyWith({
+    String? id,
+    String? name,
+    String? courseId,
+    String? lecturerId,
+    List<String>? enrolledStudents,
+    Timestamp? createdAt,
+    String? description,
+  }) {
+    return UnitModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      courseId: courseId ?? this.courseId,
+      lecturerId: lecturerId ?? this.lecturerId,
+      enrolledStudents: enrolledStudents ?? this.enrolledStudents,
+      createdAt: createdAt ?? this.createdAt,
+      description: description ?? this.description,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'courseId': courseId,
+      'lecturerId': lecturerId,
+      'enrolledStudents': enrolledStudents,
+      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'description': description,
     };
   }
 }

@@ -8,27 +8,31 @@ enum AttendanceStatus {
 
 class AttendanceModel {
   final String id;
-  final String studentId;
-  final String studentName; // Added field
   final String unitId;
-  final String courseName; // Added field
+  final String unitName;
+  final String studentId;
+  final String studentName;
+  final String courseName;
   final String lecturerId;
   final String venue;
   final Timestamp attendanceDate;
   final AttendanceStatus status;
-  final String? lecturerComments;
+  final String lecturerComments;
+  final String studentComments;
 
   AttendanceModel({
     required this.id,
-    required this.studentId,
-    required this.studentName, // Added to constructor
     required this.unitId,
-    required this.courseName, // Added to constructor
+    this.unitName = '',
+    required this.studentId,
+    required this.studentName,
+    required this.courseName,
     required this.lecturerId,
     required this.venue,
     required this.attendanceDate,
     this.status = AttendanceStatus.pending,
-    this.lecturerComments,
+    this.lecturerComments = '',
+    this.studentComments = '',
   });
 
   factory AttendanceModel.fromFirestore(DocumentSnapshot doc) {
@@ -91,27 +95,63 @@ class AttendanceModel {
 
   AttendanceModel copyWith({
     String? id,
+    String? unitId,
+    String? unitName,
     String? studentId,
     String? studentName,
-    String? unitId,
     String? courseName,
     String? lecturerId,
     String? venue,
     Timestamp? attendanceDate,
     AttendanceStatus? status,
     String? lecturerComments,
+    String? studentComments,
   }) {
     return AttendanceModel(
       id: id ?? this.id,
+      unitId: unitId ?? this.unitId,
+      unitName: unitName ?? this.unitName,
       studentId: studentId ?? this.studentId,
       studentName: studentName ?? this.studentName,
-      unitId: unitId ?? this.unitId,
       courseName: courseName ?? this.courseName,
       lecturerId: lecturerId ?? this.lecturerId,
       venue: venue ?? this.venue,
       attendanceDate: attendanceDate ?? this.attendanceDate,
       status: status ?? this.status,
       lecturerComments: lecturerComments ?? this.lecturerComments,
+      studentComments: studentComments ?? this.studentComments,
     );
   }
+
+  // Create AttendanceModel from a Map (used when fetching from Firestore)
+  factory AttendanceModel.fromMap(Map<String, dynamic> map) {
+    AttendanceStatus getStatus(String status) {
+      switch (status) {
+        case 'approved':
+          return AttendanceStatus.approved;
+        case 'rejected':
+          return AttendanceStatus.rejected;
+        case 'pending':
+        default:
+          return AttendanceStatus.pending;
+      }
+    }
+
+    return AttendanceModel(
+      id: map['id'] ?? '',
+      unitId: map['unitId'] ?? '',
+      unitName: map['unitName'] ?? '',
+      studentId: map['studentId'] ?? '',
+      studentName: map['studentName'] ?? '',
+      courseName: map['courseName'] ?? '',
+      lecturerId: map['lecturerId'] ?? '',
+      venue: map['venue'] ?? '',
+      attendanceDate: map['attendanceDate'] as Timestamp? ?? Timestamp.now(),
+      status: getStatus(map['status'] ?? ''),
+      lecturerComments: map['lecturerComments'] ?? '',
+      studentComments: map['studentComments'] ?? '',
+    );
+  }
+
+
 }

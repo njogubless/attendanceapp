@@ -1,4 +1,5 @@
 import 'package:attendanceapp/Providers/auth_providers.dart';
+import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
 import 'package:attendanceapp/Screens/admin/admin_dashboard';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
@@ -30,22 +31,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (authState is AsyncError && !loading) {
       error = authState.error.toString();
+      debugPrint("Authentication error: $error");
     }
 
     // Navigate based on role after successful login
     if (authState is AsyncData && authState.value != null && !loading) {
       // Use a microtask to avoid building during build
+      
       Future.microtask(() {
         final userRole = authState.value!.role;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => userRole == 'lecturer'
-                ? const LecturerDashboard()
-                // : userRole == 'admin'
-                //     ? const AdminDashboardScreen() // Replace with AdminDashboard
-                    : StudentDashboard(),
-          ),
-        );
+      debugPrint("User Authenticated: $userRole");
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) {
+          if (userRole == 'lecturer') {
+            return const LecturerDashboard();
+          } else if (userRole == 'student') {
+            return StudentDashboard();
+          } else {
+            debugPrint(" Unexpected role:$userRole");
+            return SignupScreen(toggleView: widget.toggleView);
+          }
+        }));
       });
     }
 

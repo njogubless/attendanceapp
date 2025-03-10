@@ -1,7 +1,32 @@
 import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/services/unit_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+class UnitManagerState {
+  final List<UnitModel> units;
+  final bool isLoading;
+  final String? errorMessage;
+
+  UnitManagerState({
+    this.units = const [],
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  UnitManagerState copyWith({
+    List<UnitModel>? units,
+    bool? isLoading,
+    String? errorMessage,
+  }) {
+    return UnitManagerState(
+      units: units ?? this.units,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
 
 final unitServiceProvider = Provider<UnitService>((ref) {
   return UnitService();
@@ -11,17 +36,18 @@ final unitsProvider = StreamProvider<List<UnitModel>>((ref) {
   return ref.read(unitServiceProvider).getUnits();
 });
 
-final unitNotifierProvider = StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
+final unitNotifierProvider =
+    StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
   return UnitNotifier(ref.read(unitServiceProvider));
 });
 
 class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
   final UnitService _unitService;
 
-  UnitNotifier(this._unitService) : super(AsyncValue.loading());
+  UnitNotifier(this._unitService) : super(const AsyncValue.loading());
 
   Future<void> addUnit(UnitModel unit) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       await _unitService.addUnit(unit);
       final units = await _unitService.getUnits().first;
@@ -32,7 +58,7 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
   }
 
   Future<void> enrollStudent(String unitId, String studentId) async {
-    state = AsyncValue.loading();
+    state = const AsyncValue.loading();
     try {
       await _unitService.enrollStudent(unitId, studentId);
       final units = await _unitService.getUnits().first;
@@ -40,5 +66,61 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
+      }
+  
   }
-}
+  
+  final unitManagerProvider = StateNotifierProvider<UnitManagerNotifier, UnitManagerState>((ref) {
+    return UnitManagerNotifier(FirebaseFirestore.instance);
+  });
+  
+  class UnitManagerNotifier extends StateNotifier<UnitManagerState> {
+  final FirebaseFirestore _firestore;
+
+  UnitManagerNotifier(this._firestore) : super(UnitManagerState());
+
+  Future<void> fetchUnitsForCourse(String  courseId) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      final unitDocs = await _firestore.collection('units').where('courseId', isEqualTo:courseId).get();
+      final units = unitDocs.docs.map((doc) => UnitModel.fromFirestore(doc)).toList();
+
+      state = state.copyWith(units:units, isLoading: false);
+      
+    } catch (e) {
+      state = state.copyWith(
+        isLoading:false, errorMessage: 'Failed to fetch units: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<void> addUnitToCourse(UnitModel unit, String courseId) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    
+    try {
+      // Add unit to Firestore
+      final unitRef = _firestore.collection('units').doc();
+      final unitWithId = unit.copyWith(id: unitRef.id);
+      
+      await unitRef.set(unitWithId.toFirestore());
+      
+      // Update course's units array
+      await _firestore.collection('courses').doc(courseId).update({
+        'units': FieldValue.arrayUnion([unitRef.id])
+      });
+      
+      // Update local state
+      state = state.copyWith(
+        units: [...state.units, unitWithId],
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false, 
+        errorMessage: 'Failed to add unit: ${e.toString()}'
+      );
+    }
+  }
+  }
+
