@@ -1,6 +1,5 @@
 import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
-import 'package:attendanceapp/Screens/admin/admin_dashboard';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:flutter/material.dart';
