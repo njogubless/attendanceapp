@@ -194,7 +194,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                 ),
               ),
               const SizedBox(height: 8),
-              UnitAttendance(
+              CourseAttendance(
                 studentId: _studentId,
                 studentName: _studentName,
               ),

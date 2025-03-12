@@ -1,71 +1,16 @@
-// unit_attendance.dart
 import 'package:attendanceapp/Models/attendance_model.dart';
 import 'package:attendanceapp/Models/course_model.dart';
-import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/Providers/attendance_providers.dart';
 import 'package:attendanceapp/Providers/course_providers.dart' as course_providers;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final allStudentUnitsProvider = Provider<AsyncValue<List<UnitWithCourse>>>((ref) {
-  final enrolledCoursesAsync = ref.watch(course_providers.studentEnrolledCoursesProvider);
-  
-  return enrolledCoursesAsync.when(
-    data: (courses) {
-      if (courses.isEmpty) {
-        return const AsyncValue.data([]);
-      }
-      
-      // Use a StreamProvider or FutureProvider instead for async operations
-      final unitsAsyncValue = ref.watch(allStudentUnitsFutureProvider(courses));
-      
-      // Now return the AsyncValue directly
-      return unitsAsyncValue;
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (err, stack) => AsyncValue.error(err, stack),
-  );
-});
-
-// Create a separate FutureProvider to handle the async work
-final allStudentUnitsFutureProvider = FutureProvider.family<List<UnitWithCourse>, List<CourseModel>>((ref, courses) async {
-  // Create a list to hold all unit futures
-  final List<Future<List<UnitWithCourse>>> unitFutures = [];
-  
-  // For each course, get its units
-  for (final course in courses) {
-    final unitsFuture = ref.watch(course_providers.courseUnitsProvider(course.id).future)
-      .then((units) => units.map((unit) => UnitWithCourse(
-            unit: unit, 
-            courseName: course.name,
-            courseId: course.id
-          )).toList());
-    
-    unitFutures.add(unitsFuture);
-  }
-  
-  // Wait for all futures to complete and flatten the results
-  final unitLists = await Future.wait(unitFutures);
-  return unitLists.expand((units) => units).toList();
-});
-class UnitWithCourse {
-  final UnitModel unit;
-  final String courseName;
-  final String courseId;
-  
-  UnitWithCourse({
-    required this.unit,
-    required this.courseName,
-    required this.courseId,
-  });
-}
-
-class UnitAttendance extends ConsumerWidget {
+class CourseAttendance extends ConsumerWidget {
   final String studentId;
   final String studentName;
   
-  const UnitAttendance({
+  const CourseAttendance({
     Key? key,
     required this.studentId,
     required this.studentName,
@@ -73,22 +18,31 @@ class UnitAttendance extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unitsAsyncValue = ref.watch(allStudentUnitsProvider);
+    final enrolledCoursesAsyncValue = ref.watch(course_providers.studentEnrolledCoursesProvider);
     
-    return unitsAsyncValue.when(
-      data: (units) {
-        if (units.isEmpty) {
-          return const Center(
+    return enrolledCoursesAsyncValue.when(
+      data: (courses) {
+        if (courses.isEmpty) {
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.school, size: 48, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text(
-                    'No units found. Please register for courses first.',
+                  const Icon(Icons.school, size: 48, color: Colors.grey),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No courses found. Please register for courses first.',
                     style: TextStyle(color: Colors.grey),
                     textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Refresh the provider
+                      ref.refresh(course_providers.studentEnrolledCoursesProvider);
+                    },
+                    child: const Text('Refresh'),
                   ),
                 ],
               ),
@@ -99,29 +53,46 @@ class UnitAttendance extends ConsumerWidget {
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: units.length,
+          itemCount: courses.length,
           itemBuilder: (context, index) {
-            final unitWithCourse = units[index];
+            final course = courses[index];
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 8),
                 leading: CircleAvatar(
                   backgroundColor: Colors.green.shade100,
                   child: Text(
-                    unitWithCourse.unit.name.isNotEmpty ? unitWithCourse.unit.name[0] : 'U',
+                    course.name.isNotEmpty ? course.name[0] : 'C',
                     style: TextStyle(
                       color: Colors.green.shade800,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                title: Text(unitWithCourse.unit.name),
-                subtitle: Text('Course: ${unitWithCourse.courseName}'),
+                title: Text(
+                  course.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Course Code: ${course.courseCode}'),
+                    Text('Lecturer: ${course.lecturerName}'),
+                  ],
+                ),
                 trailing: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                   ),
-                  onPressed: () => _showAttendanceForm(context, ref, unitWithCourse, studentId, studentName),
+                  onPressed: () => _showAttendanceForm(context, ref, course, studentId, studentName),
                   child: const Text(
                     'Sign Attendance',
                     style: TextStyle(color: Colors.white),
@@ -142,11 +113,12 @@ class UnitAttendance extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 8),
               Text(
-                'Error loading units: $err',
+                'Error loading courses: $err',
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
               ),
@@ -164,9 +136,13 @@ class UnitAttendance extends ConsumerWidget {
     );
   }
 
-  void _showAttendanceForm(BuildContext context, WidgetRef ref, UnitWithCourse unitWithCourse, String studentId, String studentName) {
-    final commentController = TextEditingController();
+  void _showAttendanceForm(BuildContext context, WidgetRef ref, CourseModel course, String studentId, String studentName) {
+    final emailController = TextEditingController();
     final locationController = TextEditingController();
+    final commentController = TextEditingController();
+
+    // Pre-fill some information
+    emailController.text = '$studentName@example.com'; // Replace with actual student email if available
 
     showDialog(
       context: context,
@@ -180,9 +156,19 @@ class UnitAttendance extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Unit: ${unitWithCourse.unit.name}',
+                  Text('Course: ${course.name}',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Course: ${unitWithCourse.courseName}'),
+                  Text('Course Code: ${course.courseCode}'),
+                  Text('Lecturer: ${course.lecturerName}'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: locationController,
@@ -216,16 +202,17 @@ class UnitAttendance extends ConsumerWidget {
                 // Create attendance model
                 final attendance = AttendanceModel(
                   id: '', // This will be generated by Firestore
-                  unitId: unitWithCourse.unit.id,
-                  unitName: unitWithCourse.unit.name,
+                  unitId: course.id, // Use courseId as unitId for now
+                  unitName: course.name, // Use course name as unit name
                   studentId: studentId,
                   studentName: studentName,
-                  courseName: unitWithCourse.courseName,
-                  lecturerId: unitWithCourse.unit.lecturerId,
+                  courseName: course.name,
+                  lecturerId: course.lecturerId,
                   venue: locationController.text,
                   attendanceDate: Timestamp.now(),
                   status: AttendanceStatus.pending,
                   studentComments: commentController.text,
+                  studentEmail: emailController.text,
                 );
 
                 // Submit attendance

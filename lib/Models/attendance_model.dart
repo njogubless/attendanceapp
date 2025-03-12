@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum AttendanceStatus {
-  pending,
-  approved,
-  rejected
-}
+enum AttendanceStatus { pending, approved, rejected }
 
 class AttendanceModel {
   final String id;
@@ -12,6 +8,7 @@ class AttendanceModel {
   final String unitName;
   final String studentId;
   final String studentName;
+  final String studentEmail;
   final String courseName;
   final String lecturerId;
   final String venue;
@@ -26,6 +23,7 @@ class AttendanceModel {
     this.unitName = '',
     required this.studentId,
     required this.studentName,
+    required this.studentEmail,
     required this.courseName,
     required this.lecturerId,
     required this.venue,
@@ -41,13 +39,15 @@ class AttendanceModel {
       id: doc.id,
       studentId: data['studentId'] ?? '',
       studentName: data['studentName'] ?? '', // Added field extraction
+      studentEmail: data['studentEmail'] ?? '',
       unitId: data['unitId'] ?? '',
       courseName: data['courseName'] ?? '', // Added field extraction
       lecturerId: data['lecturerId'] ?? '',
       venue: data['venue'] ?? '',
       attendanceDate: data['attendanceDate'] ?? Timestamp.now(),
       status: AttendanceStatus.values.firstWhere(
-        (e) => e.toString() == 'AttendanceStatus.${data['status'] ?? 'pending'}',
+        (e) =>
+            e.toString() == 'AttendanceStatus.${data['status'] ?? 'pending'}',
         orElse: () => AttendanceStatus.pending,
       ),
       lecturerComments: data['lecturerComments'],
@@ -92,7 +92,6 @@ class AttendanceModel {
     return attendanceDate.toDate();
   }
 
-
   AttendanceModel copyWith({
     String? id,
     String? unitId,
@@ -113,6 +112,7 @@ class AttendanceModel {
       unitName: unitName ?? this.unitName,
       studentId: studentId ?? this.studentId,
       studentName: studentName ?? this.studentName,
+      studentEmail: studentEmail,
       courseName: courseName ?? this.courseName,
       lecturerId: lecturerId ?? this.lecturerId,
       venue: venue ?? this.venue,
@@ -143,6 +143,7 @@ class AttendanceModel {
       unitName: map['unitName'] ?? '',
       studentId: map['studentId'] ?? '',
       studentName: map['studentName'] ?? '',
+      studentEmail: map['studentEmail'] ?? '',
       courseName: map['courseName'] ?? '',
       lecturerId: map['lecturerId'] ?? '',
       venue: map['venue'] ?? '',
@@ -152,6 +153,4 @@ class AttendanceModel {
       studentComments: map['studentComments'] ?? '',
     );
   }
-
-
 }
