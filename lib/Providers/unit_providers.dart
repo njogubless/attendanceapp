@@ -95,7 +95,7 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
     }
   }
 
-  Future<void> addUnitToCourse(UnitModel unit, String courseId) async {
+  Future<void> addUnit(UnitModel unit, String courseId) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     
     try {
@@ -122,5 +122,54 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
       );
     }
   }
+
+  Future<void> deleteUnit(String unitId, String courseId) async {
+  state = state.copyWith(isLoading: true, errorMessage: null);
+  
+  try {
+    // Delete the unit document from Firestore
+    await _firestore.collection('units').doc(unitId).delete();
+    
+    // Remove the unit ID from the course's units array
+    await _firestore.collection('courses').doc(courseId).update({
+      'units': FieldValue.arrayRemove([unitId])
+    });
+    
+    // Update local state by filtering out the deleted unit
+    state = state.copyWith(
+      units: state.units.where((unit) => unit.id != unitId).toList(),
+      isLoading: false,
+    );
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: 'Failed to delete unit: ${e.toString()}'
+    );
+  }
+}
+
+Future<void> updateUnit(UnitModel updatedUnit) async {
+  state = state.copyWith(isLoading: true, errorMessage: null);
+  
+  try {
+    // Update the unit document in Firestore
+    await _firestore.collection('units').doc(updatedUnit.id).update(
+      updatedUnit.toFirestore()
+    );
+    
+    // Update local state
+    state = state.copyWith(
+      units: state.units.map((unit) => 
+        unit.id == updatedUnit.id ? updatedUnit : unit
+      ).toList(),
+      isLoading: false,
+    );
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: 'Failed to update unit: ${e.toString()}'
+    );
+  }
+}
   }
 

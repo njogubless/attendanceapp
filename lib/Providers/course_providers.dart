@@ -90,7 +90,57 @@ final courseUnitsProvider = StreamProvider.family<List<UnitModel>, String>((ref,
           .toList());
 });
 
-// Provider to get all units enrolled by a student
+// Model to combine unit with course info
+class UnitWithCourse {
+  final UnitModel unit;
+  final String courseName;
+  final String courseId;
+  
+  UnitWithCourse({
+    required this.unit,
+    required this.courseName,
+    required this.courseId,
+  });
+}
+
+// Provider to get all units for a student across all courses
+final allStudentUnitsProvider = FutureProvider.autoDispose<List<UnitWithCourse>>((ref) async {
+  final enrolledCoursesAsync = ref.watch(studentEnrolledCoursesProvider);
+  
+  return enrolledCoursesAsync.when(
+    data: (courses) async {
+      if (courses.isEmpty) {
+        return [];
+      }
+      
+      // Create a list to hold all unit futures
+      final List<Future<List<UnitWithCourse>>> unitFutures = [];
+      
+      // For each course, get its units
+      for (final course in courses) {
+        final unitsFuture = ref.watch(courseUnitsProvider(course.id).future)
+          .then((units) => units.map((unit) => UnitWithCourse(
+                unit: unit, 
+                courseName: course.name,
+                courseId: course.id
+              )).toList());
+        
+        unitFutures.add(unitsFuture);
+      }
+      
+      // Wait for all futures to complete and flatten the results
+      final unitLists = await Future.wait(unitFutures);
+      return unitLists.expand((units) => units).toList();
+    },
+    loading: () => throw _LoadingException(),
+    error: (err, stack) => throw err,
+  );
+});
+
+// An exception class to handle loading state
+class _LoadingException implements Exception {}
+
+// Provider to get all units enrolled by a student directly
 final studentEnrolledUnitsProvider = StreamProvider<List<UnitModel>>((ref) {
   final user = ref.watch(userDataProvider).value;
   if (user == null) return Stream.value([]);

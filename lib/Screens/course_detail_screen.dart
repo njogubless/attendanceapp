@@ -19,14 +19,14 @@ class CourseDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<CourseDetailScreen> createState() => _CourseDetailScreenState();
 }
 
-class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
+class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with TickerProviderStateMixin {
   // Tab controller for managing units and attendance tabs
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: TickerProvider.of(context));
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -36,7 +36,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
+    final course = widget.course;
     final attendanceStream = ref.watch(attendanceForCourseProvider(course.id));
     final unitsStream = ref.watch(courseUnitsProvider(course.id));
 
@@ -62,7 +65,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
               children: [
                 Text(
                   'Units for ${course.name}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -112,8 +116,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                         },
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Center(child: Text('Error: $error')),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) =>
+                        Center(child: Text('Error: $error')),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -128,7 +134,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
               ],
             ),
           ),
-          
+
           // ATTENDANCE TAB
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -172,7 +178,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                     },
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Center(child: Text('Error: $error')),
+                    error: (error, stack) =>
+                        Center(child: Text('Error: $error')),
                   ),
                 ),
               ],
@@ -191,88 +198,89 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Add New Unit'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(labelText: 'Unit Name'),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Please enter unit name'
-                        : null,
-                    onChanged: (value) => unitName = value,
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(labelText: 'Description (Optional)'),
-                    maxLines: 3,
-                    onChanged: (value) => unitDescription = value,
-                  ),
-                ],
-              ),
+      builder: (context) => StatefulBuilder(builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Add New Unit'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Unit Name'),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter unit name'
+                      : null,
+                  onChanged: (value) => unitName = value,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(
+                      labelText: 'Description (Optional)'),
+                  maxLines: 3,
+                  onChanged: (value) => unitDescription = value,
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              isLoading
-                  ? const CircularProgressIndicator()
-                  : TextButton(
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          setState(() {
-                            isLoading = true;
-                          });
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            isLoading
+                ? const CircularProgressIndicator()
+                : TextButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        setState(() {
+                          isLoading = true;
+                        });
 
-                          try {
-                            final userData = ref.read(userDataProvider).value;
-                            if (userData != null) {
-                              // Create a document reference to get an ID
-                              final docRef = FirebaseFirestore.instance
-                                  .collection('units')
-                                  .doc();
+                        try {
+                          final userData = ref.read(userDataProvider).value;
+                          if (userData != null) {
+                            // Create a document reference to get an ID
+                            final docRef = FirebaseFirestore.instance
+                                .collection('units')
+                                .doc();
+                                final courseId = widget.course.id;
 
-                              final unit = UnitModel(
-                                id: docRef.id,
-                                name: unitName,
-                                courseId: course.id,
-                                lecturerId: userData.id,
-                                description: unitDescription,
-                              );
-
-                              await ref
-                                  .read(unitManagerProvider.notifier)
-                                  .addUnit(unit);
-
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Unit added successfully')),
-                              );
-                            }
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Error adding unit: ${e.toString()}')),
+                            final unit = UnitModel(
+                              id: docRef.id,
+                              name: unitName,
+                              courseId: courseId,
+                              lecturerId: userData.id,
+                              description: unitDescription,
                             );
-                          } finally {
-                            setState(() {
-                              isLoading = false;
-                            });
+
+                            await ref
+                                .read(unitManagerProvider.notifier)
+                                .addUnit(unit, courseId);
+
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Unit added successfully')),
+                            );
                           }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text('Error adding unit: ${e.toString()}')),
+                          );
+                        } finally {
+                          setState(() {
+                            isLoading = false;
+                          });
                         }
-                      },
-                      child: const Text('Add'),
-                    ),
-            ],
-          );
-        }
-      ),
+                      }
+                    },
+                    child: const Text('Add'),
+                  ),
+          ],
+        );
+      }),
     );
   }
 
@@ -284,79 +292,79 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Edit Unit'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: unitName,
-                    decoration: const InputDecoration(labelText: 'Unit Name'),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Please enter unit name'
-                        : null,
-                    onChanged: (value) => unitName = value,
-                  ),
-                  TextFormField(
-                    initialValue: unitDescription,
-                    decoration: const InputDecoration(labelText: 'Description (Optional)'),
-                    maxLines: 3,
-                    onChanged: (value) => unitDescription = value,
-                  ),
-                ],
-              ),
+      builder: (context) => StatefulBuilder(builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Edit Unit'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: unitName,
+                  decoration: const InputDecoration(labelText: 'Unit Name'),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter unit name'
+                      : null,
+                  onChanged: (value) => unitName = value,
+                ),
+                TextFormField(
+                  initialValue: unitDescription,
+                  decoration: const InputDecoration(
+                      labelText: 'Description (Optional)'),
+                  maxLines: 3,
+                  onChanged: (value) => unitDescription = value,
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              isLoading
-                  ? const CircularProgressIndicator()
-                  : TextButton(
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            isLoading
+                ? const CircularProgressIndicator()
+                : TextButton(
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        setState(() {
+                          isLoading = true;
+                        });
+
+                        try {
+                          final updatedUnit = unit.copyWith(
+                            name: unitName,
+                            description: unitDescription,
+                          );
+
+                          await ref
+                              .read(unitManagerProvider.notifier)
+                              .updateUnit(updatedUnit);
+
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Unit updated successfully')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Error updating unit: ${e.toString()}')),
+                          );
+                        } finally {
                           setState(() {
-                            isLoading = true;
+                            isLoading = false;
                           });
-
-                          try {
-                            final updatedUnit = unit.copyWith(
-                              name: unitName,
-                              description: unitDescription,
-                            );
-
-                            await ref
-                                .read(unitManagerProvider.notifier)
-                                .updateUnit(updatedUnit);
-
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Unit updated successfully')),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Error updating unit: ${e.toString()}')),
-                            );
-                          } finally {
-                            setState(() {
-                              isLoading = false;
-                            });
-                          }
                         }
-                      },
-                      child: const Text('Update'),
-                    ),
-            ],
-          );
-        }
-      ),
+                      }
+                    },
+                    child: const Text('Update'),
+                  ),
+          ],
+        );
+      }),
     );
   }
 
@@ -365,8 +373,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Unit'),
-        content: Text(
-            'Are you sure you want to delete ${unit.name}?'),
+        content: Text('Are you sure you want to delete ${unit.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -384,7 +391,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
       try {
         await ref
             .read(unitManagerProvider.notifier)
-            .deleteUnit(unit.id);
+            .deleteUnit(unit.id, unit.courseId);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unit deleted successfully')),
         );
