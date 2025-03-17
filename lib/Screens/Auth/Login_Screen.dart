@@ -24,8 +24,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
-    // if (authState is AsyncLoading && !loading) {
-    //   return const Center(child: CircularProgressIndicator());
+    @override
+    void initstate() {
+      super.initState();
+      loading = false;
+    }
+
+    @override
+    void dispose() {
+      super.dispose();
+    }
+
+    // if (authState is AsyncLoading) {
+    //   return const Scaffold(
+    //     body: Center(
+    //       child: CircularProgressIndicator()));
     // }
 
     if (authState is AsyncError && !loading) {
@@ -35,11 +48,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     // Navigate based on role after successful login
     if (authState is AsyncData && authState.value != null && !loading) {
-      // Use a microtask to avoid building during build
-      
+      loading = true;
+    
       Future.microtask(() {
         final userRole = authState.value!.role;
-      debugPrint("User Authenticated: $userRole");
+        debugPrint("User Authenticated: $userRole");
         Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) {
           if (userRole == 'lecturer') {
             return const LecturerDashboard();

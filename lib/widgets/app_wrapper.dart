@@ -17,6 +17,8 @@ class AppWrapper extends ConsumerWidget {
     return authState.when(
       data: (User? user) {
         if (user == null) {
+          // Clear any cached user data state when logged out
+          ref.invalidate(userDataProvider);
           return const AuthenticationWrapper();
         } else {
           // User is logged in, fetch user data
@@ -26,8 +28,16 @@ class AppWrapper extends ConsumerWidget {
             data: (userModel) {
               if (userModel == null) {
                 // Something went wrong, log out and return to auth screen
-                FirebaseAuth.instance.signOut();
-                return const AuthenticationWrapper();
+                // Wrap in a builder to get a fresh context
+                return Builder(
+                  builder: (context) {
+                    // Use Future.microtask to avoid build-time side effects
+                    Future.microtask(() => FirebaseAuth.instance.signOut());
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                );
               }
               
               // Route based on user role
@@ -46,8 +56,16 @@ class AppWrapper extends ConsumerWidget {
             ),
             error: (_, __) {
               // Error fetching user data, log out
-              FirebaseAuth.instance.signOut();
-              return const AuthenticationWrapper();
+              // Wrap in a builder to get a fresh context
+              return Builder(
+                builder: (context) {
+                  // Use Future.microtask to avoid build-time side effects
+                  Future.microtask(() => FirebaseAuth.instance.signOut());
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+              );
             },
           );
         }
