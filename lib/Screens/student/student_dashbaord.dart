@@ -1,11 +1,13 @@
 // student_dashboard.dart - Main dashboard file
 
 import 'package:attendanceapp/Providers/auth_providers.dart';
-import 'package:attendanceapp/Providers/course_providers.dart' as course_providers;
+import 'package:attendanceapp/Providers/course_providers.dart'
+    as course_providers;
 import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
 import 'package:attendanceapp/Screens/student/components/resgistered_courses.dart';
 import 'package:attendanceapp/Screens/student/components/student_header.dart';
 import 'package:attendanceapp/Screens/student/components/unit_attendance.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -31,10 +33,26 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
     try {
       User? user = _auth.currentUser;
       if (user != null) {
-        setState(() {
-          _studentName = user.displayName ?? 'Student';
-          _studentId = user.uid;
-        });
+        // Get the student ID first
+        final studentId = user.uid;
+
+        // Fetch student data from your database
+        final studentData = await FirebaseFirestore.instance
+            .collection('students')
+            .doc(studentId)
+            .get();
+
+        if (studentData.exists) {
+          setState(() {
+            _studentName = studentData['name'] ?? 'Student';
+            _studentId = studentId;
+          });
+        } else {
+          setState(() {
+            _studentName = user.displayName ?? 'Student';
+            _studentId = studentId;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading student data: $e');
@@ -47,13 +65,16 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
       builder: (BuildContext context) {
         return Consumer(
           builder: (context, ref, child) {
-            final coursesAsyncValue = ref.watch(course_providers.coursesProvider);
-            final enrolledCoursesAsyncValue = ref.watch(course_providers.studentEnrolledCoursesProvider);
+            final coursesAsyncValue =
+                ref.watch(course_providers.coursesProvider);
+            final enrolledCoursesAsyncValue =
+                ref.watch(course_providers.studentEnrolledCoursesProvider);
 
             return coursesAsyncValue.when(
               data: (courses) {
                 final enrolledCourseIds = enrolledCoursesAsyncValue.maybeWhen(
-                  data: (enrolledCourses) => enrolledCourses.map((c) => c.id).toSet(),
+                  data: (enrolledCourses) =>
+                      enrolledCourses.map((c) => c.id).toSet(),
                   orElse: () => <String>{},
                 );
 
@@ -74,7 +95,8 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             title: Text(course.name),
-                            subtitle: Text('${course.courseCode} - ${course.lecturerName}'),
+                            subtitle: Text(
+                                '${course.courseCode} - ${course.lecturerName}'),
                             trailing: isEnrolled
                                 ? const Chip(
                                     label: Text('Enrolled'),
@@ -84,12 +106,15 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                                 : ElevatedButton(
                                     onPressed: () {
                                       ref
-                                          .read(course_providers.courseNotifierProvider.notifier)
+                                          .read(course_providers
+                                              .courseNotifierProvider.notifier)
                                           .enrollStudent(course.id, _studentId);
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
-                                          content: Text('Enrolled in ${course.name}'),
+                                          content: Text(
+                                              'Enrolled in ${course.name}'),
                                           backgroundColor: Colors.green,
                                         ),
                                       );
@@ -198,7 +223,7 @@ class _StudentDashboardState extends ConsumerState<StudentDashboard> {
                 studentId: _studentId,
                 studentName: _studentName,
               ),
-              
+
               const SizedBox(height: 24),
             ],
           ),
