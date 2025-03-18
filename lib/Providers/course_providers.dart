@@ -41,14 +41,21 @@ final studentEnrolledCoursesProvider = StreamProvider<List<CourseModel>>((ref) {
       .snapshots()
       .asyncMap((snapshot) async {
         List<CourseModel> enrolledCourses = [];
+        Set<String> addedCourseIds = {}; // Track added course IDs
+        
         for (var doc in snapshot.docs) {
           final courseId = doc.data()['courseId'];
+          
+          // Skip if we've already added this course
+          if (addedCourseIds.contains(courseId)) continue;
+          
           final courseDoc = await FirebaseFirestore.instance
               .collection('courses')
               .doc(courseId)
               .get();
           
           if (courseDoc.exists) {
+            addedCourseIds.add(courseId); // Mark as added
             enrolledCourses.add(CourseModel.fromFirestore(courseDoc));
           }
         }

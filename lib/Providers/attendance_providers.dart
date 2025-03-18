@@ -1,25 +1,34 @@
+// lib/Providers/attendance_providers.dart
 import 'package:attendanceapp/Models/attendance_model.dart';
 import 'package:attendanceapp/services/attendance_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Main service provider
 final attendanceServiceProvider = Provider<AttendanceService>((ref) {
   return AttendanceService();
 });
 
+// Provider for all attendances
 final attendancesProvider = StreamProvider<List<AttendanceModel>>((ref) {
   return ref.read(attendanceServiceProvider).getAttendances();
 });
 
-// New provider for pending attendance for lecturer
+// Provider for pending attendance for lecturer
 final pendingAttendanceForLecturerProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, lecturerId) {
   return ref.read(attendanceServiceProvider).getPendingAttendanceForLecturer(lecturerId);
 });
 
-// New provider for attendance by course
+// Provider for attendance by course
 final attendanceForCourseProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, courseId) {
   return ref.read(attendanceServiceProvider).getAttendanceForCourse(courseId);
 });
 
+// Provider for student attendances
+final studentAttendancesProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, studentId) {
+  return ref.read(attendanceServiceProvider).getAttendanceByStudent(studentId);
+});
+
+// State notifier provider for managing attendance
 final attendanceManagerProvider = StateNotifierProvider<AttendanceNotifier, AsyncValue<List<AttendanceModel>>>((ref) {
   return AttendanceNotifier(ref.read(attendanceServiceProvider));
 });
@@ -30,28 +39,31 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
   AttendanceNotifier(this._attendanceService) : super(const AsyncValue.loading());
 
   Future<void> submitAttendance(AttendanceModel attendance) async {
-    state = const AsyncValue.loading();
     try {
       await _attendanceService.submitAttendance(attendance);
-      final attendances = await _attendanceService.getAttendances().first;
-      state = AsyncValue.data(attendances);
+      // We could optionally update the state here, but for a StreamProvider
+      // the UI will automatically update when the Firestore data changes
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
   Future<void> approveAttendance(String attendanceId) async {
-    state = const AsyncValue.loading();
     try {
       await _attendanceService.approveAttendance(attendanceId);
-      final attendances = await _attendanceService.getAttendances().first;
-      state = AsyncValue.data(attendances);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
   
-  // Add methods to fetch pending attendance for lecturer
+  Future<void> rejectAttendance(String attendanceId, String comments) async {
+    try {
+      await _attendanceService.rejectAttendance(attendanceId, comments);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+  
   Future<void> fetchPendingAttendanceForLecturer(String lecturerId) async {
     state = const AsyncValue.loading();
     try {
@@ -62,7 +74,6 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
     }
   }
   
-  // Add methods to fetch attendance for a specific course
   Future<void> fetchAttendanceForCourse(String courseId) async {
     state = const AsyncValue.loading();
     try {
