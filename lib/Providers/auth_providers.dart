@@ -32,11 +32,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
       {required String email,
       required String password,
       required String name,
-      required String role}) async {
+      required String role,
+      required String regNo}) async {
     state = const AsyncValue.loading();
     try {
       final user = await _authService.signUp(
-          email: email, password: password, name: name, role: role);
+          email: email, password: password, name: name, role: role,);
       state = AsyncValue.data(user);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);

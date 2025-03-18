@@ -25,6 +25,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
   String name = '';
   String email = '';
   String password = '';
+  String regNo = ''; // Added registration number
   String role = 'student'; // Default role
   Role selectedRole = Role.student; // Default selected role
 
@@ -42,18 +43,21 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
       error = authState.error.toString();
     }
 
-    // Navigate based on role after successful registration
+    // Navigate to login after successful registration
     if (authState is AsyncData && authState.value != null && !loading) {
       // Use a microtask to avoid building during build
       Future.microtask(() {
-        final userRole = authState.value!.role;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => userRole == 'lecturer' 
-              ? const LecturerDashboard() 
-              : StudentDashboard(),
+        // Show success message 
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please log in.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
+        
+        // Switch to login screen
+        widget.toggleView();
       });
     }
 
@@ -138,6 +142,26 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                         },
                       ),
                       const SizedBox(height: 20.0),
+                      // New Registration Number field
+                      TextFormField(
+                        decoration: const InputDecoration(
+                            labelText: 'REGISTRATION NUMBER',
+                            labelStyle: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontWeight: FontWeight.bold,
+                                color: darkGrey),
+                            focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: lightBlue))),
+                        validator: (val) => val!.trim().isEmpty
+                            ? 'Enter a valid registration number'
+                            : null,
+                        onChanged: (val) {
+                          setState(() {
+                            regNo = val.trim();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20.0),
                       TextFormField(
                         decoration: const InputDecoration(
                             labelText: 'PASSWORD',
@@ -218,6 +242,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                                     password: password,
                                     name: name,
                                     role: role,
+                                    regNo: regNo, // Pass the registration number
                                   );
         
                               // Check for errors after sign-up attempt
@@ -236,14 +261,19 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                             shadowColor: Colors.blueAccent,
                             color: Colors.blue,
                             elevation: 7.0,
-                            child: const Center(
-                              child: Text(
-                                'REGISTER',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Montserrat'),
-                              ),
+                            child: Center(
+                              child: loading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    )
+                                  : const Text(
+                                      'REGISTER',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Montserrat'),
+                                    ),
                             ),
                           ),
                         ),
