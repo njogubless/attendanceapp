@@ -236,14 +236,12 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
     
     final attendanceList = courseAttendanceAsync.value;
     
-    // Filter by date range if applicable
-    final filteredAttendance = attendanceList.where((attendance) {
-      if (_startDate == null || _endDate == null) return true;
-      final attendanceDate = attendance.date;
-      return attendanceDate.isAfter(_startDate!) && 
-             attendanceDate.isBefore(_endDate!.add(const Duration(days: 1)));
-    }).toList();
-    
+  final filteredAttendance = attendanceList != null ? attendanceList.where((attendance) {
+  if (_startDate == null || _endDate == null) return true;
+  final attendanceDate = attendance.date;
+  return attendanceDate.isAfter(_startDate!) && 
+         attendanceDate.isBefore(_endDate!.add(const Duration(days: 1)));
+}).toList() : [];
     final pdf = pw.Document();
     
     final courseName = ref.read(courseProvider(widget.courseId)).when(
@@ -309,13 +307,12 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
     
     final attendanceList = courseAttendanceAsync.value;
     
-    // Filter by date range if applicable
-    final filteredAttendance = attendanceList.where((attendance) {
-      if (_startDate == null || _endDate == null) return true;
-      final attendanceDate = attendance.date;
-      return attendanceDate.isAfter(_startDate!) && 
-             attendanceDate.isBefore(_endDate!.add(const Duration(days: 1)));
-    }).toList();
+final filteredAttendance = attendanceList != null ? attendanceList.where((attendance) {
+  if (_startDate == null || _endDate == null) return true;
+  final attendanceDate = attendance.date;
+  return attendanceDate.isAfter(_startDate!) && 
+         attendanceDate.isBefore(_endDate!.add(const Duration(days: 1)));
+}).toList() : [];
     
     final pdf = pw.Document();
     

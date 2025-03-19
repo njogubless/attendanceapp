@@ -1,8 +1,20 @@
 // lib/Providers/attendance_providers.dart
 import 'package:attendanceapp/Models/attendance_model.dart';
+import 'package:attendanceapp/Models/course_model.dart';
 import 'package:attendanceapp/services/attendance_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
+
+// Add this to your attendance_providers.dart file
+final courseProvider = StreamProvider.family<CourseModel, String>((ref, courseId) {
+  return FirebaseFirestore.instance
+      .collection('courses')
+      .doc(courseId)
+      .snapshots()
+      .map((snapshot) => CourseModel.fromFirestore(snapshot));
+});
 // Main service provider
 final attendanceServiceProvider = Provider<AttendanceService>((ref) {
   return AttendanceService();

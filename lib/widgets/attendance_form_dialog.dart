@@ -61,33 +61,33 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
       });
     }
   }
+void _submitAttendance() {
+  final timestamp = DateTime(
+    selectedDate.year,
+    selectedDate.month,
+    selectedDate.day,
+    selectedTime.hour,
+    selectedTime.minute,
+  );
 
-  void _submitAttendance() {
-    final timestamp = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      selectedTime.hour,
-      selectedTime.minute,
-    );
+  final attendance = AttendanceModel(
+    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    unitId: widget.course.id,  // Using course.id as unitId
+    unitName: widget.course.name,
+    studentId: widget.studentId,
+    studentName: widget.studentName,
+    studentEmail: emailController.text,  // Using the email field
+    courseName: widget.course.name,
+    lecturerId: '',  // You might need to pass this from somewhere else
+    venue: locationController.text,  // Using location as venue
+    attendanceDate: Timestamp.fromDate(timestamp),
+    studentComments: !isPresent ? reasonController.text : '',  // Using reason as studentComments if absent
+    isSubmitted: true,  // Assuming this is a submission
+  );
 
-    final attendance = AttendanceModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      courseId: widget.course.id,
-      courseName: widget.course.name,
-      studentId: widget.studentId,
-      studentName: widget.studentName,
-      isPresent: isPresent,
-      email: emailController.text,
-      location: locationController.text,
-      reason: reasonController.text,
-      timestamp: Timestamp.fromDate(timestamp),
-    );
-
-    widget.onSubmit(attendance);
-    Navigator.of(context).pop();
-  }
-
+  widget.onSubmit(attendance);
+  Navigator.of(context).pop();
+}
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
