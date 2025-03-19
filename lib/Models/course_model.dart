@@ -10,6 +10,9 @@ class CourseModel {
   final List<String> units;
   final List<String> enrolledStudents;
   final Timestamp? createdAt;
+   final bool isActive; // Track if the course attendance is active
+  final Timestamp? activationTime; // When attendance was activated
+  final Timestamp? deactivationTime; 
 
   CourseModel({
     required this.id,
@@ -21,6 +24,9 @@ class CourseModel {
     this.units = const [],
     this.enrolledStudents = const [],
     this.createdAt,
+     this.isActive = false,
+    this.activationTime,
+    this.deactivationTime,
   });
 
   // Update the fromFirestore and toFirestore methods to include the new fields
@@ -36,6 +42,9 @@ class CourseModel {
       units: List<String>.from(data['units'] ?? []),
       enrolledStudents: List<String>.from(data['enrolledStudents'] ?? []),
       createdAt: data['createdAt'],
+      isActive: data['isActive'] ?? false,
+      activationTime: data['activationTime'],
+      deactivationTime: data['deactivationTime'],
     );
   }
 
@@ -49,6 +58,33 @@ class CourseModel {
       'units': units,
       'enrolledStudents': enrolledStudents,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+       'isActive': isActive,
+      'activationTime': activationTime,
+      'deactivationTime': deactivationTime,
     };
+  }
+
+  CourseModel copyWith({
+    String? id,
+    String? name,
+    String? courseCode,
+    String? lecturerId,
+    String? lecturerName,
+    String? description,
+    bool? isActive,
+    Timestamp? activationTime,
+    Timestamp? deactivationTime,
+  }) {
+    return CourseModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      courseCode: courseCode ?? this.courseCode,
+      lecturerId: lecturerId ?? this.lecturerId,
+      lecturerName: lecturerName ?? this.lecturerName,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+      activationTime: activationTime ?? this.activationTime,
+      deactivationTime: deactivationTime ?? this.deactivationTime,
+    );
   }
 }

@@ -7,6 +7,7 @@ class UserModel {
   final String role;
   final List<String>? courses;
   String status;
+  final String regNo;
 
   UserModel({
     required this.id,
@@ -14,6 +15,7 @@ class UserModel {
     required this.email,
     required this.role,
     this.courses,
+    this.regNo ='',
     this.status = 'pending',
   });
 
@@ -24,6 +26,7 @@ class UserModel {
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       role: data['role'] ?? '',
+      regNo: data['regNo'] ?? '',
       status: data['status'] ?? 'pending',
       courses: List<String>.from(data['courses'] ?? []),
     );
@@ -36,6 +39,7 @@ class UserModel {
       'role': role,
       'courses': courses,
       'status': status,
+      'regNo':regNo,
     };
   }
 }

@@ -1,3 +1,4 @@
+// FILE: lib/services/auth_service.dart
 import 'package:attendanceapp/Models/user_models.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,11 +7,13 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<UserModel> signUp({
+  // Register user without signing in
+  Future<void> registerOnly({
     required String email,
     required String password,
     required String name,
     required String role,
+    required String regNo,
   }) async {
     try {
       // Create user with Firebase Authentication
@@ -25,15 +28,17 @@ class AuthService {
         name: name,
         email: email,
         role: role,
-        status: 'pending', 
+        regNo: regNo, // Added registration number
+        status: 'active', // Set to active by default
       );
 
-      // Store additional user info in Firestore
+      // Store user info in Firestore
       await _firestore.collection('users').doc(userModel.id).set(
             userModel.toFirestore(),
           );
 
-      return userModel;
+      // Sign out immediately
+      await _auth.signOut();
     } catch (e) {
       rethrow;
     }

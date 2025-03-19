@@ -1,11 +1,7 @@
-// Changes to SignupScreen to improve role selection and navigation
+// FILE: lib/Screens/Auth/signup_screen.dart
 import 'package:attendanceapp/Providers/auth_providers.dart';
-import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
-import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
-import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:attendanceapp/core/constants/Color/color_constants.dart';
 import 'package:email_validator/email_validator.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,19 +13,19 @@ class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key, required this.toggleView});
 
   @override
-  ConsumerState<SignupScreen> createState() => _RegisterClientState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _RegisterClientState extends ConsumerState<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formkey = GlobalKey<FormState>();
   bool loading = false;
 
   String name = '';
   String email = '';
   String password = '';
-  String regNo = ''; // Added registration number
-  String role = 'student'; // Default role
-  Role selectedRole = Role.student; // Default selected role
+  String regNo = '';
+  String role = 'student';
+  Role selectedRole = Role.student;
 
   String error = '';
 
@@ -37,31 +33,9 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
-    // if (authState is AsyncLoading && !loading) {
-    //   return const Center(child: CircularProgressIndicator()); // Replace with your Loading widget
-    // }
-
+    // Handle error states
     if (authState is AsyncError && !loading) {
       error = authState.error.toString();
-    }
-
-    // Navigate to login after successful registration
-    if (authState is AsyncData && authState.value != null && !loading) {
-      // Use a microtask to avoid building during build
-      Future.microtask(() async {
-        await ref.read(authNotifierProvider.notifier).signOut();
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful! Please log in.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-
-        // Switch to login screen
-        widget.toggleView();
-      });
     }
 
     return Scaffold(
@@ -146,7 +120,6 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                         },
                       ),
                       const SizedBox(height: 20.0),
-                      // New Registration Number field
                       TextFormField(
                         decoration: const InputDecoration(
                             labelText: 'REGISTRATION NUMBER',
@@ -187,8 +160,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                       ),
                       const SizedBox(height: 20.0),
                       DropdownButtonFormField<Role>(
-                        value:
-                            selectedRole, // Set initial value to prevent null
+                        value: selectedRole,
                         decoration: const InputDecoration(
                             labelText: 'ROLE',
                             labelStyle: TextStyle(
@@ -240,24 +212,16 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                               });
 
                               try {
-                                // Use the AuthNotifier from Riverpod to handle sign-up
+                                // Register the user without signing in
                                 await ref
                                     .read(authNotifierProvider.notifier)
-                                    .signUp(
+                                    .registerOnly(
                                       email: email,
                                       password: password,
                                       name: name,
                                       role: role,
                                       regNo: regNo,
                                     );
-
-                                // If we get here without an exception, registration was successful
-
-                                // We need to sign out the user since we just want to register, not log in yet
-                                await FirebaseAuth.instance.signOut();
-                                await ref
-                                    .read(authNotifierProvider.notifier)
-                                    .signOut();
 
                                 if (mounted) {
                                   // Show success message
@@ -269,23 +233,11 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                                     duration: Duration(seconds: 3),
                                   ));
 
-                                  // Replace with login screen using MaterialPageRoute
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LoginScreen(
-                                        toggleView: () =>
-                                            Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => SignupScreen(
-                                              toggleView: () {},
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
+                                  // Switch to login view
+                                  setState(() {
+                                    loading = false;
+                                  });
+                                  widget.toggleView();
                                 }
                               } catch (e) {
                                 // Handle error
@@ -350,19 +302,19 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
               ],
             ),
             const SizedBox(height: 15.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  error,
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    color: Colors.red,
+            if (error.isNotEmpty)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    error,
+                    style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      color: Colors.red,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 5.0),
-              ],
-            )
+                ],
+              )
           ],
         ),
       ),

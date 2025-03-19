@@ -60,5 +60,43 @@ class CourseService {
       rethrow;
     }
   }
+
+    Future<void> activateAttendance(String courseId) async {
+    try {
+      await _firestore.collection('courses').doc(courseId).update({
+        'isActive': true,
+        'activationTime': Timestamp.now(),
+        'deactivationTime': null,
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Deactivate attendance for a course
+  Future<void> deactivateAttendance(String courseId) async {
+    try {
+      await _firestore.collection('courses').doc(courseId).update({
+        'isActive': false,
+        'deactivationTime': Timestamp.now(),
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Get currently active courses for a lecturer
+  Stream<List<CourseModel>> getActiveCourses(String lecturerId) {
+    return _firestore
+        .collection('courses')
+        .where('lecturerId', isEqualTo: lecturerId)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CourseModel.fromFirestore(doc))
+              .toList(),
+        );
+  }
 }
 

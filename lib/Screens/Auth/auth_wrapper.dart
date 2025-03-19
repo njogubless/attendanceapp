@@ -1,13 +1,13 @@
+
 import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
 import 'package:flutter/material.dart';
 
-import 'package:attendanceapp/Screens/Auth/signup_screen.dart';
-
 class AuthenticationWrapper extends StatefulWidget {
-  const AuthenticationWrapper({super.key});
+  const AuthenticationWrapper({Key? key}) : super(key: key);
 
   @override
-  _AuthenticationWrapperState createState() => _AuthenticationWrapperState();
+  State<AuthenticationWrapper> createState() => _AuthenticationWrapperState();
 }
 
 class _AuthenticationWrapperState extends State<AuthenticationWrapper> {

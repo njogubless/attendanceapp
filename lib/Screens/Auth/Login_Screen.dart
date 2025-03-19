@@ -1,6 +1,5 @@
+// FILE: lib/Screens/Auth/login_screen.dart
 import 'package:attendanceapp/Providers/auth_providers.dart';
-import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
-import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:attendanceapp/core/constants/Color/color_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,45 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool loading = false;
 
   @override
-  void initState() {
-    super.initState();
-    loading = false;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
-    if (authState is AsyncError && !loading) {
-      error = authState.error.toString();
-      debugPrint("Authentication error: $error");
-    }
-
-    // Navigate based on role after successful login
-    if (authState is AsyncData && authState.value != null && !loading) {
-      // Use a microtask to avoid building during build
-      Future.microtask(() {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        
-        final userRole = authState.value!.role;
-        debugPrint("User Authenticated: $userRole");
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) {
-          if (userRole == 'lecturer') {
-            return const LecturerDashboard();
-          } else {
-            return StudentDashboard();
-          }
-        }));
-      });
-    }
-
     return Scaffold(
       backgroundColor: white,
       resizeToAvoidBottomInset: false,
@@ -166,17 +127,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               error = '';
                             });
 
-                            // Use the AuthNotifier from Riverpod to handle sign-in
-                            await ref
-                                .read(authNotifierProvider.notifier)
-                                .signIn(email, password);
-
-                            // Check for errors after sign-in attempt
-                            final currentState = ref.read(authNotifierProvider);
-                            if (currentState is AsyncError) {
+                            try {
+                              // Sign in the user
+                              await ref
+                                  .read(authNotifierProvider.notifier)
+                                  .signIn(email, password);
+                                  
+                              // The AppWrapper will handle navigation based on the user role
+                            } catch (e) {
                               setState(() {
                                 loading = false;
-                                error = 'Login failed: ${currentState.error}';
+                                error = 'Login failed: ${e.toString()}';
                               });
                             }
                           }
@@ -210,6 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: InkWell(
                         onTap: () {
                           // Handle forgot password
+                          _showForgotPasswordDialog();
                         },
                         child: const Text(
                           'Forgot Password?',
@@ -224,7 +186,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ],
                 ),
-              )
+              ),
             ),
             const SizedBox(height: 35.0),
             Row(
@@ -263,12 +225,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: Colors.red,
                     ),
                   ),
-                  const SizedBox(width: 5.0),
                 ],
               )
           ],
         ),
       ),
+    );
+  }
+  
+  void _showForgotPasswordDialog() {
+    String forgotEmail = '';
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reset Password'),
+          content: TextField(
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'Enter your email'
+            ),
+            onChanged: (value) {
+              forgotEmail = value.trim();
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              }, 
+              child: const Text('Cancel')
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (forgotEmail.isNotEmpty) {
+                  try {
+                    await ref.read(authServiceProvider).resetPassword(forgotEmail);
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password reset link sent to your email'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Reset Password')
+            ),
+          ],
+        );
+      },
     );
   }
 }
