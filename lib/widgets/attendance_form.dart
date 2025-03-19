@@ -9,7 +9,7 @@ class AttendanceFormDialog extends StatefulWidget {
   final String studentId;
   final String studentName;
   final Function(AttendanceModel) onSubmit;
-  
+
   const AttendanceFormDialog({
     Key? key,
     required this.course,
@@ -26,14 +26,17 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
   final emailController = TextEditingController();
   final locationController = TextEditingController();
   final commentController = TextEditingController();
-  
+  final studentNameController = TextEditingController();
+  final registrationNumberController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     // Pre-fill some information
-    emailController.text = '${widget.studentName}@example.com'; // Replace with actual student email if available
+    emailController.text =
+        '${widget.studentName}@example.com'; // Replace with actual student email if available
   }
-  
+
   @override
   void dispose() {
     emailController.dispose();
@@ -53,10 +56,8 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Course: ${widget.course.name}',
-                style: const TextStyle(fontWeight: FontWeight.bold)
-              ),
+              Text('Course: ${widget.course.name}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('Course Code: ${widget.course.courseCode}'),
               Text('Lecturer: ${widget.course.lecturerName}'),
               const SizedBox(height: 16),
@@ -67,6 +68,24 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(
+                height: 16,
+              ),
+              TextField(
+                controller: studentNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: registrationNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Registration number ',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -110,7 +129,6 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
               status: AttendanceStatus.pending,
               studentComments: commentController.text,
               studentEmail: emailController.text,
-           
             );
 
             widget.onSubmit(attendance);

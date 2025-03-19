@@ -1,9 +1,11 @@
 // Changes to SignupScreen to improve role selection and navigation
 import 'package:attendanceapp/Providers/auth_providers.dart';
+import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
 import 'package:attendanceapp/Screens/lecturer/lecturer_dashboard.dart';
 import 'package:attendanceapp/Screens/student/student_dashbaord.dart';
 import 'package:attendanceapp/core/constants/Color/color_constants.dart';
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,8 +48,9 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
     // Navigate to login after successful registration
     if (authState is AsyncData && authState.value != null && !loading) {
       // Use a microtask to avoid building during build
-      Future.microtask(() {
-        // Show success message 
+      Future.microtask(() async {
+        await ref.read(authNotifierProvider.notifier).signOut();
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Registration successful! Please log in.'),
@@ -55,7 +58,7 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-        
+
         // Switch to login screen
         widget.toggleView();
       });
@@ -78,14 +81,14 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(15.0, 0.0, 0.0, 0.0),
                   child: const Text('Do',
-                      style:
-                          TextStyle(fontSize: 80.0, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: 80.0, fontWeight: FontWeight.bold)),
                 ),
                 Container(
                   padding: const EdgeInsets.fromLTRB(16.0, 70.0, 0.0, 0.0),
                   child: const Text('Sign Up',
-                      style:
-                          TextStyle(fontSize: 80.0, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: 80.0, fontWeight: FontWeight.bold)),
                 ),
                 Container(
                   padding: const EdgeInsets.fromLTRB(310.0, 70.0, 0.0, 0.0),
@@ -99,7 +102,8 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
               ],
             ),
             Container(
-                padding: const EdgeInsets.only(top: 5.0, left: 20.0, right: 20.0),
+                padding:
+                    const EdgeInsets.only(top: 5.0, left: 20.0, right: 20.0),
                 child: Form(
                   key: _formkey,
                   child: Column(
@@ -183,7 +187,8 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                       ),
                       const SizedBox(height: 20.0),
                       DropdownButtonFormField<Role>(
-                        value: selectedRole, // Set initial value to prevent null
+                        value:
+                            selectedRole, // Set initial value to prevent null
                         decoration: const InputDecoration(
                             labelText: 'ROLE',
                             labelStyle: TextStyle(
@@ -233,26 +238,64 @@ class _RegisterClientState extends ConsumerState<SignupScreen> {
                                 loading = true;
                                 error = '';
                               });
-        
-                              // Use the AuthNotifier from Riverpod to handle sign-up
-                              await ref
-                                  .read(authNotifierProvider.notifier)
-                                  .signUp(
-                                    email: email,
-                                    password: password,
-                                    name: name,
-                                    role: role,
-                                    regNo: regNo, // Pass the registration number
+
+                              try {
+                                // Use the AuthNotifier from Riverpod to handle sign-up
+                                await ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signUp(
+                                      email: email,
+                                      password: password,
+                                      name: name,
+                                      role: role,
+                                      regNo: regNo,
+                                    );
+
+                                // If we get here without an exception, registration was successful
+
+                                // We need to sign out the user since we just want to register, not log in yet
+                                await FirebaseAuth.instance.signOut();
+                                await ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signOut();
+
+                                if (mounted) {
+                                  // Show success message
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text(
+                                        'Registration successful! Please log in.'),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 3),
+                                  ));
+
+                                  // Replace with login screen using MaterialPageRoute
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LoginScreen(
+                                        toggleView: () =>
+                                            Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => SignupScreen(
+                                              toggleView: () {},
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   );
-        
-                              // Check for errors after sign-up attempt
-                              final currentState = ref.read(authNotifierProvider);
-                              if (currentState is AsyncError) {
-                                setState(() {
-                                  loading = false;
-                                  error =
-                                      'Registration failed: ${currentState.error}';
-                                });
+                                }
+                              } catch (e) {
+                                // Handle error
+                                if (mounted) {
+                                  setState(() {
+                                    loading = false;
+                                    error =
+                                        'Registration failed: ${e.toString()}';
+                                  });
+                                }
                               }
                             }
                           },
