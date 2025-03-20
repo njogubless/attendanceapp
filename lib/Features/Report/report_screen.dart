@@ -28,7 +28,7 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
   @override
   Widget build(BuildContext context) {
     final unitData = ref.watch(unitProvider(widget.unitId));
-    final attendanceData = ref.watch(attendanceForUnitProvider(widget.unitId));
+    final attendanceData = ref.watch(attendanceForCourseProvider(widget.unitId));
 
     return Scaffold(
       appBar: AppBar(
@@ -356,7 +356,7 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
               Navigator.pop(context);
               ref.read(attendanceManagerProvider.notifier).updateAttendanceStatus(
                 attendanceId,
-                newStatus,
+                newStatus.toString(),
               );
             },
             style: ElevatedButton.styleFrom(

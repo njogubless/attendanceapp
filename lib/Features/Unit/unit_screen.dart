@@ -1,368 +1,198 @@
-// Unit Detail Screen
-import 'package:attendanceapp/Models/attendance_model.dart';
+// Create Unit Screen
 import 'package:attendanceapp/Models/unit_model.dart';
-import 'package:attendanceapp/Providers/attendance_providers.dart';
 import 'package:attendanceapp/Providers/unit_providers.dart';
-import 'package:attendanceapp/Screens/lecturer/attendance_report_screen.dart';
-import 'package:attendanceapp/Screens/lecturer/create_unit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UnitDetailScreen extends ConsumerWidget {
-  final String unitId;
+class UnitScreen extends ConsumerStatefulWidget {
+  final String lecturerId;
+  final UnitModel? unit; // For editing existing unit
 
-  const UnitDetailScreen({Key? key, required this.unitId}) : super(key: key);
+  const UnitScreen({
+    Key? key,
+    required this.lecturerId,
+    this.unit,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unitData = ref.watch(unitProvider(unitId));
-    final attendanceData = ref.watch(attendanceForUnitProvider(unitId));
+  ConsumerState<UnitScreen> createState() => _CreateUnitScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Unit Details'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              unitData.maybeWhen(
-                data: (unit) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CreateUnitScreen(
-                        lecturerId: unit.lecturerId,
-                        unit: unit,
-                      ),
-                    ),
-                  );
-                },
-                orElse: () {},
-              );
-            },
-          ),
-        ],
-      ),
-      body: unitData.when(
-        data: (unit) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUnitInfo(context, unit),
-                const SizedBox(height: 24),
-                _buildAttendanceControls(context, ref, unit),
-                const SizedBox(height: 24),
-                _buildAttendanceSection(context, ref, unit, attendanceData),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error loading unit: $error'),
-        ),
-      ),
-    );
+class _CreateUnitScreenState extends ConsumerState<UnitScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _codeController;
+  late TextEditingController _descriptionController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.unit?.name ?? '');
+    _codeController = TextEditingController(text: widget.unit?.code ?? '');
+    _descriptionController = TextEditingController(text: widget.unit?.description ?? '');
   }
 
-  Widget _buildUnitInfo(BuildContext context, UnitModel unit) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  unit.name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                _buildStatusChip(unit.status),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Code: ${unit.code}'),
-            const SizedBox(height: 8),
-            Text('Created: ${DateFormat.yMMMd().format(unit.createdAt.toDate())}'),
-            if (unit.description.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Description:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(unit.description),
-            ],
-            if (unit.adminComments.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'Admin Comments:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                unit.adminComments,
-                style: const TextStyle(fontStyle: FontStyle.italic),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _codeController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
-  Widget _buildStatusChip(UnitStatus status) {
-    Color chipColor;
-    String statusText;
-
-    switch (status) {
-      case UnitStatus.approved:
-        chipColor = Colors.green;
-        statusText = 'Approved';
-        break;
-      case UnitStatus.rejected:
-        chipColor = Colors.red;
-        statusText = 'Rejected';
-        break;
-      case UnitStatus.pending:
-      default:
-        chipColor = Colors.orange;
-        statusText = 'Pending';
+  Future<void> _saveUnit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
 
-    return Chip(
-      label: Text(statusText),
-      backgroundColor: chipColor.withOpacity(0.2),
-      labelStyle: TextStyle(color: chipColor),
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get the lecturer data (assuming there's a way to get the name)
+      // This could be from a provider or passed in as a parameter
+      final lecturerName = "Current Lecturer"; // Replace with actual logic
+
+      if (widget.unit == null) {
+        // Create new unit
+        final newUnit = UnitModel(
+          id: '', // Will be assigned by Firestore
+          name: _nameController.text.trim(),
+          code: _codeController.text.trim(),
+          courseId: 'courseId', // Replace with actual courseId
+          lecturerId: widget.lecturerId,
+          lecturerName: lecturerName,
+          description: _descriptionController.text.trim(),
+          status: UnitStatus.pending,
+          isAttendanceActive: false,
+          createdAt: Timestamp.now(),
+        );
+
+        await ref.read(unitManagerProvider.notifier).addUnit(newUnit, newUnit.courseId );
+      } else {
+        // Update existing unit
+        final updatedUnit = widget.unit!.copyWith(
+          name: _nameController.text.trim(),
+          code: _codeController.text.trim(),
+          description: _descriptionController.text.trim(),
+        );
+
+        await ref.read(unitManagerProvider.notifier).updateUnit(updatedUnit);
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  Widget _buildAttendanceControls(BuildContext context, WidgetRef ref, UnitModel unit) {
-    // Only show controls for approved units
-    if (unit.status != UnitStatus.approved) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.unit == null ? 'Create New Unit' : 'Edit Unit'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Attendance Management',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Unit Name',
+                  hintText: 'e.g., Introduction to Computer Science',
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a unit name';
+                  }
+                  return null;
+                },
               ),
-              SizedBox(height: 8),
-              Text(
-                'Attendance management is only available for approved units.',
-                style: TextStyle(color: Colors.grey),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Unit Code',
+                  hintText: 'e.g., CS101',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a unit code';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Briefly describe the unit',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+              if (widget.unit != null)
+                Text(
+                  'Status: ${widget.unit!.status.toString().split('.').last}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _getStatusColor(widget.unit!.status),
+                  ),
+                ),
+              if (widget.unit != null && widget.unit!.adminComments.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Admin Comments: ${widget.unit!.adminComments}',
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveUnit,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : Text(widget.unit == null ? 'Create Unit' : 'Update Unit'),
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Attendance Management',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Attendance Status:'),
-                Row(
-                  children: [
-                    Text(
-                      unit.isAttendanceActive ? 'Active' : 'Inactive',
-                      style: TextStyle(
-                        color: unit.isAttendanceActive ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Switch(
-                      value: unit.isAttendanceActive,
-                      onChanged: (value) {
-                        _toggleAttendance(context, ref, unit.id, value);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (unit.isAttendanceActive)
-              const Text(
-                'Students can now submit attendance for this unit.',
-                style: TextStyle(color: Colors.green),
-              )
-            else
-              const Text(
-                'Attendance is currently disabled for this unit.',
-                style: TextStyle(color: Colors.grey),
-              ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AttendanceReportScreen(unitId: unit.id),
-                    ),
-                  );
-                },
-                child: const Text('View Attendance Report'),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildAttendanceSection(
-    BuildContext context, 
-    WidgetRef ref, 
-    UnitModel unit, 
-    AsyncValue<List<AttendanceModel>> attendanceData
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recent Attendance Records',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            attendanceData.when(
-              data: (attendances) {
-                if (attendances.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('No attendance records found for this unit.'),
-                    ),
-                  );
-                }
-
-                // Sort by date, most recent first
-                attendances.sort((a, b) => b.attendanceDate.compareTo(a.attendanceDate));
-
-                // Take only the most recent 5 for this screen
-                final recentAttendances = attendances.take(5).toList();
-
-                return Column(
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: recentAttendances.length,
-                      itemBuilder: (context, index) {
-                        final attendance = recentAttendances[index];
-                        return _buildAttendanceItem(context, attendance);
-                      },
-                    ),
-                    if (attendances.length > 5) ...[
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AttendanceReportScreen(unitId: unit.id),
-                            ),
-                          );
-                        },
-                        child: const Text('View All Records'),
-                      ),
-                    ],
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text('Error loading attendance: $error'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttendanceItem(BuildContext context, AttendanceModel attendance) {
-    Color statusColor;
-    
-    switch (attendance.status) {
-      case AttendanceStatus.approved:
-        statusColor = Colors.green;
-        break;
-      case AttendanceStatus.rejected:
-        statusColor = Colors.red;
-        break;
-      case AttendanceStatus.pending:
+  Color _getStatusColor(UnitStatus status) {
+    switch (status) {
+      case UnitStatus.approved:
+        return Colors.green;
+      case UnitStatus.rejected:
+        return Colors.red;
+      case UnitStatus.pending:
       default:
-        statusColor = Colors.orange;
-    }
-
-    return ListTile(
-      title: Text(attendance.studentName),
-      subtitle: Text(
-        'Date: ${DateFormat.yMMMd().format(attendance.attendanceDate.toDate())}'
-      ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          attendance.status.toString().split('.').last,
-          style: TextStyle(color: statusColor),
-        ),
-      ),
-      onTap: () {
-        // Handle tapping on an attendance record
-        // Could show a dialog with more details or navigate to a detail screen
-      },
-    );
-  }
-
-  void _toggleAttendance(BuildContext context, WidgetRef ref, String unitId, bool isActive) {
-    final notifier = ref.read(attendanceManagerProvider.notifier);
-
-    if (isActive) {
-      notifier.activateAttendanceForUnit(unitId);
-    } else {
-      notifier.deactivateAttendanceForUnit(unitId);
+        return Colors.orange;
     }
   }
 }

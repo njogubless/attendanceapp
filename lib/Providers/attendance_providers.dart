@@ -76,6 +76,14 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
+
+  Future<void> updateAttendanceStatus(String attendanceId, String newStatus) async {
+  try {
+    await _attendanceService.updateAttendanceStatus(attendanceId, newStatus);
+  } catch (e) {
+    state = AsyncValue.error(e, StackTrace.current);
+  }
+}
   
   Future<void> fetchPendingAttendanceForLecturer(String lecturerId) async {
     state = const AsyncValue.loading();

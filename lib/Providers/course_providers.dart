@@ -11,6 +11,15 @@ final courseServiceProvider = Provider<CourseService>((ref) {
   return CourseService();
 });
 
+// Provider to get a single course by ID
+final courseProvider = StreamProvider.family<CourseModel, String>((ref, courseId) {
+  return FirebaseFirestore.instance
+      .collection('courses')
+      .doc(courseId)
+      .snapshots()
+      .map((snapshot) => CourseModel.fromFirestore(snapshot));
+});
+
 // General courses provider - lists all available courses
 final coursesProvider = StreamProvider<List<CourseModel>>((ref) {
   return ref.read(courseServiceProvider).getCourses();

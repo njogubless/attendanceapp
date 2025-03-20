@@ -171,5 +171,29 @@ Future<void> updateUnit(UnitModel updatedUnit) async {
     );
   }
 }
+
+Future<void> toggleAttendanceStatus(String unitId, bool isActive) async {
+  state = state.copyWith(isLoading: true, errorMessage: null);
+  
+  try {
+    // Update the unit's attendance status in Firestore
+    await _firestore.collection('units').doc(unitId).update({
+      'isAttendanceActive': isActive
+    });
+    
+    // Update the local state
+    state = state.copyWith(
+      units: state.units.map((unit) => 
+        unit.id == unitId ? unit.copyWith(isAttendanceActive: isActive) : unit
+      ).toList(),
+      isLoading: false,
+    );
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: 'Failed to toggle attendance status: ${e.toString()}'
+    );
+  }
+}
   }
 

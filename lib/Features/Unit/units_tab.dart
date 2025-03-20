@@ -1,9 +1,11 @@
 // Complete the UnitsTab widget that was cut off
+import 'package:attendanceapp/Features/Unit/unit_deatil_screen.dart';
+import 'package:attendanceapp/Features/Unit/unit_screen.dart';
 import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
 import 'package:attendanceapp/Providers/unit_providers.dart';
-import 'package:attendanceapp/Screens/lecturer/create_unit_screen.dart';
-import 'package:attendanceapp/Screens/lecturer/unit_detail_screen.dart';
+import 'package:attendanceapp/Providers/units_provider.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +81,7 @@ class UnitsTab extends ConsumerWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateUnitScreen(lecturerId: user.id),
+                  builder: (context) => UnitScreen(lecturerId: user.id),
                 ),
               );
             },

@@ -40,6 +40,17 @@ class AttendanceService {
       rethrow;
     }
   }
+
+//   Future<void> updateAttendanceStatus(String attendanceId, String newStatus) async {
+//   try {
+//     await FirebaseFirestore.instance
+//         .collection('attendances')
+//         .doc(attendanceId)
+//         .update({'status': newStatus});
+//   } catch (e) {
+//     throw Exception('Failed to update attendance status: $e');
+//   }
+// }
   
   Stream<List<AttendanceModel>> getAttendanceByStudent(String studentId) {
     return _firestore

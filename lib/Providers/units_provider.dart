@@ -19,10 +19,10 @@ final approvedUnitsProvider = StreamProvider<List<UnitModel>>((ref) {
 });
 
 // State notifier for unit management
-final unitManagerProvider =
-    StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
-  return UnitNotifier(ref.read(unitServiceProvider));
-});
+// final unitManagerProvider =
+//     StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
+//   return UnitNotifier(ref.read(unitServiceProvider));
+// });
 
 class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
   final UnitService _unitService;
