@@ -1,20 +1,18 @@
-// lib/Providers/attendance_providers.dart
 import 'package:attendanceapp/Models/attendance_model.dart';
-import 'package:attendanceapp/Models/course_model.dart';
+import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/services/attendance_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-
-// Add this to your attendance_providers.dart file
-final courseProvider = StreamProvider.family<CourseModel, String>((ref, courseId) {
+// Unit provider (usually in unit_providers.dart but referenced here)
+final unitProvider = StreamProvider.family<UnitModel, String>((ref, unitId) {
   return FirebaseFirestore.instance
-      .collection('courses')
-      .doc(courseId)
+      .collection('units')
+      .doc(unitId)
       .snapshots()
-      .map((snapshot) => CourseModel.fromFirestore(snapshot));
+      .map((snapshot) => UnitModel.fromFirestore(snapshot));
 });
+
 // Main service provider
 final attendanceServiceProvider = Provider<AttendanceService>((ref) {
   return AttendanceService();
@@ -30,14 +28,19 @@ final pendingAttendanceForLecturerProvider = FutureProvider.family<List<Attendan
   return ref.read(attendanceServiceProvider).getPendingAttendanceForLecturer(lecturerId);
 });
 
-// Provider for attendance by course
-final attendanceForCourseProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, courseId) {
-  return ref.read(attendanceServiceProvider).getAttendanceForCourse(courseId);
+// Provider for attendance by unit/course
+final attendanceForUnitProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, unitId) {
+  return ref.read(attendanceServiceProvider).getAttendanceForCourse(unitId);
 });
 
 // Provider for student attendances
 final studentAttendancesProvider = StreamProvider.family<List<AttendanceModel>, String>((ref, studentId) {
   return ref.read(attendanceServiceProvider).getAttendanceByStudent(studentId);
+});
+
+// Provider for active attendance sessions (useful for students)
+final activeAttendanceProvider = StreamProvider<List<AttendanceModel>>((ref) {
+  return ref.read(attendanceServiceProvider).getActiveAttendance();
 });
 
 // State notifier provider for managing attendance
@@ -53,8 +56,6 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
   Future<void> submitAttendance(AttendanceModel attendance) async {
     try {
       await _attendanceService.submitAttendance(attendance);
-      // We could optionally update the state here, but for a StreamProvider
-      // the UI will automatically update when the Firestore data changes
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
@@ -86,11 +87,28 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
     }
   }
   
-  Future<void> fetchAttendanceForCourse(String courseId) async {
+  Future<void> fetchAttendanceForCourse(String unitId) async {
     state = const AsyncValue.loading();
     try {
-      final courseAttendances = await _attendanceService.getAttendanceForCourse(courseId);
-      state = AsyncValue.data(courseAttendances);
+      final unitAttendances = await _attendanceService.getAttendanceForCourse(unitId);
+      state = AsyncValue.data(unitAttendances);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  // New methods for attendance activation
+  Future<void> activateAttendanceForUnit(String unitId) async {
+    try {
+      await _attendanceService.activateAttendanceForUnit(unitId);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<void> deactivateAttendanceForUnit(String unitId) async {
+    try {
+      await _attendanceService.deactivateAttendanceForUnit(unitId);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }

@@ -1,75 +1,88 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum UnitStatus { pending, approved, rejected }
+
 class UnitModel {
   final String id;
   final String name;
-  final String courseId;
+  final String code;
   final String lecturerId;
-  final List<String> enrolledStudents;
-  final Timestamp? createdAt;
+  final String lecturerName;
   final String description;
+  final UnitStatus status;
+  final bool isAttendanceActive;
+  final String adminComments;
+  final Timestamp createdAt;
 
   UnitModel({
     required this.id,
     required this.name,
-    required this.courseId,
+    required this.code,
     required this.lecturerId,
-    this.enrolledStudents = const [],
-    this.createdAt,
+    required this.lecturerName,
     this.description = '',
-  });
+    this.status = UnitStatus.pending,
+    this.isAttendanceActive = false,
+    this.adminComments = '',
+    Timestamp? createdAt,
+  }) : createdAt = createdAt ?? Timestamp.now();
 
   factory UnitModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UnitModel(
       id: doc.id,
       name: data['name'] ?? '',
-      courseId: data['courseId'] ?? '',
+      code: data['code'] ?? '',
       lecturerId: data['lecturerId'] ?? '',
-      enrolledStudents: List<String>.from(data['enrolledStudents'] ?? []),
-      createdAt: data['createdAt'],
+      lecturerName: data['lecturerName'] ?? '',
+      description: data['description'] ?? '',
+      status: UnitStatus.values.firstWhere(
+        (e) => e.toString() == 'UnitStatus.${data['status'] ?? 'pending'}',
+        orElse: () => UnitStatus.pending,
+      ),
+      isAttendanceActive: data['isAttendanceActive'] ?? false,
+      adminComments: data['adminComments'] ?? '',
+      createdAt: data['createdAt'] ?? Timestamp.now(),
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
-      'courseId': courseId,
+      'code': code,
       'lecturerId': lecturerId,
-      'enrolledStudents': enrolledStudents,
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'lecturerName': lecturerName,
+      'description': description,
+      'status': status.toString().split('.').last,
+      'isAttendanceActive': isAttendanceActive,
+      'adminComments': adminComments,
+      'createdAt': createdAt,
     };
   }
 
   UnitModel copyWith({
     String? id,
     String? name,
-    String? courseId,
+    String? code,
     String? lecturerId,
-    List<String>? enrolledStudents,
-    Timestamp? createdAt,
+    String? lecturerName,
     String? description,
+    UnitStatus? status,
+    bool? isAttendanceActive,
+    String? adminComments,
+    Timestamp? createdAt,
   }) {
     return UnitModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      courseId: courseId ?? this.courseId,
+      code: code ?? this.code,
       lecturerId: lecturerId ?? this.lecturerId,
-      enrolledStudents: enrolledStudents ?? this.enrolledStudents,
-      createdAt: createdAt ?? this.createdAt,
+      lecturerName: lecturerName ?? this.lecturerName,
       description: description ?? this.description,
+      status: status ?? this.status,
+      isAttendanceActive: isAttendanceActive ?? this.isAttendanceActive,
+      adminComments: adminComments ?? this.adminComments,
+      createdAt: createdAt ?? this.createdAt,
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'courseId': courseId,
-      'lecturerId': lecturerId,
-      'enrolledStudents': enrolledStudents,
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-      'description': description,
-    };
   }
 }
