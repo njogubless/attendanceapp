@@ -29,7 +29,7 @@ final pendingAttendanceForLecturerProvider = FutureProvider.family<List<Attendan
 });
 
 // Provider for attendance by unit/course
-final attendanceForUnitProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, unitId) {
+final attendanceForCourseProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, unitId) {
   return ref.read(attendanceServiceProvider).getAttendanceForCourse(unitId);
 });
 

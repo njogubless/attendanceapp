@@ -13,6 +13,7 @@ class UnitModel {
   final bool isAttendanceActive;
   final String adminComments;
   final Timestamp createdAt;
+  final String courseId;
 
   UnitModel({
     required this.id,
@@ -20,6 +21,7 @@ class UnitModel {
     required this.code,
     required this.lecturerId,
     required this.lecturerName,
+    required this.courseId,
     this.description = '',
     this.status = UnitStatus.pending,
     this.isAttendanceActive = false,
@@ -35,6 +37,8 @@ class UnitModel {
       code: data['code'] ?? '',
       lecturerId: data['lecturerId'] ?? '',
       lecturerName: data['lecturerName'] ?? '',
+      courseId: data['courseId'] ?? '',
+     
       description: data['description'] ?? '',
       status: UnitStatus.values.firstWhere(
         (e) => e.toString() == 'UnitStatus.${data['status'] ?? 'pending'}',
@@ -57,6 +61,7 @@ class UnitModel {
       'isAttendanceActive': isAttendanceActive,
       'adminComments': adminComments,
       'createdAt': createdAt,
+      'courseId': courseId,
     };
   }
 
@@ -71,6 +76,7 @@ class UnitModel {
     bool? isAttendanceActive,
     String? adminComments,
     Timestamp? createdAt,
+    String? courseId,
   }) {
     return UnitModel(
       id: id ?? this.id,
@@ -83,6 +89,7 @@ class UnitModel {
       isAttendanceActive: isAttendanceActive ?? this.isAttendanceActive,
       adminComments: adminComments ?? this.adminComments,
       createdAt: createdAt ?? this.createdAt,
+      courseId: courseId ?? this.courseId,
     );
   }
 }

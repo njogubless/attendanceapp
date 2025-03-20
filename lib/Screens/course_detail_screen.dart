@@ -251,6 +251,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> with Ti
                               courseId: courseId,
                               lecturerId: userData.id,
                               description: unitDescription,
+                              code: 'unitCode', // Add appropriate unit code here
+                              lecturerName: userData.name, // Add lecturer name here
                             );
 
                             await ref
