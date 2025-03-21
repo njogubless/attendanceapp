@@ -7,7 +7,7 @@ class UnitService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<UnitModel>> getUnits() {
-    return _firestore.collection('units').snapshots().map(
+    return _firestore.collection('courses').snapshots().map(
           (snapshot) => snapshot.docs
               .map((doc) => UnitModel.fromFirestore(doc))
               .toList(),
@@ -16,7 +16,7 @@ class UnitService {
 
   Future<void> addUnit(UnitModel unit) async {
     try {
-      await _firestore.collection('units').add(unit.toFirestore());
+      await _firestore.collection('courses').add(unit.toFirestore());
     } catch (e) {
       rethrow;
     }
@@ -24,7 +24,7 @@ class UnitService {
 
   Future<void> updateUnit(UnitModel unit) async {
     try {
-      await _firestore.collection('units').doc(unit.id).update(unit.toFirestore());
+      await _firestore.collection('courses').doc(unit.id).update(unit.toFirestore());
     } catch (e) {
       rethrow;
     }
@@ -32,7 +32,7 @@ class UnitService {
 
   Future<void> deleteUnit(String unitId) async {
     try {
-      await _firestore.collection('units').doc(unitId).delete();
+      await _firestore.collection('courses').doc(unitId).delete();
     } catch (e) {
       rethrow;
     }
@@ -40,7 +40,7 @@ class UnitService {
 
   Future<void> enrollStudent(String unitId, String studentId) async {
     try {
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'enrolledStudents': FieldValue.arrayUnion([studentId])
       });
     } catch (e) {
@@ -51,7 +51,7 @@ class UnitService {
   Future<List<UnitModel>> getUnitsByCourse(String courseId) async {
     try {
       QuerySnapshot snapshot = await _firestore
-          .collection('units')
+          .collection('courses')
           .where('courseId', isEqualTo: courseId)
           .get();
 
@@ -64,10 +64,10 @@ class UnitService {
  
 
 
-  // Get all units created by a lecturer
+  // Get all courses created by a lecturer
   Stream<List<UnitModel>> getLecturerUnits(String lecturerId) {
     return _firestore
-        .collection('units')
+        .collection('courses')
         .where('lecturerId', isEqualTo: lecturerId)
         .snapshots()
         .map(
@@ -77,10 +77,10 @@ class UnitService {
         );
   }
 
-  // Get all approved units (for students to view and register)
+  // Get all approved courses (for students to view and register)
   Stream<List<UnitModel>> getApprovedUnits() {
     return _firestore
-        .collection('units')
+        .collection('courses')
         .where('status', isEqualTo: UnitStatus.approved.toString().split('.').last)
         .snapshots()
         .map(
@@ -96,7 +96,7 @@ class UnitService {
   // Toggle attendance activation status
   Future<void> toggleAttendanceStatus(String unitId, bool isActive) async {
     try {
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'isAttendanceActive': isActive,
       });
     } catch (e) {
@@ -107,7 +107,7 @@ class UnitService {
   // Admin approves a unit
   Future<void> approveUnit(String unitId, {String comments = ''}) async {
     try {
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'status': UnitStatus.approved.toString().split('.').last,
         'adminComments': comments,
       });
@@ -119,7 +119,7 @@ class UnitService {
   // Admin rejects a unit
   Future<void> rejectUnit(String unitId, {required String comments}) async {
     try {
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'status': UnitStatus.rejected.toString().split('.').last,
         'adminComments': comments,
       });

@@ -49,13 +49,11 @@ class CourseDetailScreen extends ConsumerWidget {
                   'Attendance History',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                TextButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Sign Attendance'),
-                  onPressed: () {
-                    // Show dialog to take attendance for this unit
-                    _showSignAttendanceDialog(context, ref);
-                  },
+                // Replace TextButton.icon with the buildSignAttendanceButton method
+                buildSignAttendanceButton(
+                  ref,
+                  course.id,
+                  () => _showSignAttendanceDialog(context, ref),
                 ),
               ],
             ),
@@ -120,5 +118,25 @@ class CourseDetailScreen extends ConsumerWidget {
       default:
         return const Icon(Icons.access_time, color: Colors.orange);
     }
+  }
+
+  Widget buildSignAttendanceButton(WidgetRef ref, String unitId, Function() onTap) {
+    final isAttendanceActive = ref.watch(isUnitAttendanceActiveProvider(unitId));
+    
+    return Visibility(
+      visible: isAttendanceActive,
+      replacement: const SizedBox.shrink(),
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        child: const Text('Sign Attendance'),
+      ), // Don't take up space when hidden
+    );
   }
 }

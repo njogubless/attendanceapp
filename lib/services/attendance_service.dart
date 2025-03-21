@@ -179,4 +179,21 @@ class AttendanceService {
               .toList(),
         );
   }
+  Stream<List<String>> getActiveAttendanceUnits() {
+    return FirebaseFirestore.instance
+        .collection('units')
+        .where('isAttendanceActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) => 
+            snapshot.docs.map((doc) => doc.id).toList());
+  }
+
+  // Toggle attendance activation for a unit
+  Future<void> setUnitAttendanceActive(String unitId, bool isActive) async {
+    return FirebaseFirestore.instance
+        .collection('units')
+        .doc(unitId)
+        .update({'isAttendanceActive': isActive});
+  }
+
 }

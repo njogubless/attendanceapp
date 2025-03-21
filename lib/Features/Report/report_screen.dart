@@ -14,7 +14,7 @@ import 'package:share_plus/share_plus.dart';
 class AttendanceReportScreen extends ConsumerStatefulWidget {
   final String unitId;
 
-  const AttendanceReportScreen({Key? key, required this.unitId}) : super(key: key);
+  const AttendanceReportScreen({super.key, required this.unitId});
 
   @override
   ConsumerState<AttendanceReportScreen> createState() => _AttendanceReportScreenState();

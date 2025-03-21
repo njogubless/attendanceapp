@@ -1,7 +1,5 @@
 import 'package:attendanceapp/Models/course_model.dart';
-
 import 'package:attendanceapp/Providers/course_providers.dart';
-
 import 'package:attendanceapp/Screens/course_detail_screen.dart';
 import 'package:attendanceapp/Screens/lecturer/screens/add_course_dialog.dart';
 import 'package:attendanceapp/Screens/lecturer/screens/student_list_screen.dart';
@@ -9,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CoursesTab extends ConsumerWidget {
-  const CoursesTab({super.key});
+  final Function(CourseModel)? onCourseSelected;
+  const CoursesTab({super.key, this.onCourseSelected});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +37,10 @@ class CoursesTab extends ConsumerWidget {
                   itemCount: courses.length,
                   itemBuilder: (context, index) {
                     final course = courses[index];
-                    return CourseListItem(course: course);
+                    return CourseListItem(
+                      course: course,
+                      onTap: onCourseSelected,
+                    );
                   },
                 );
               },
@@ -68,10 +70,12 @@ class CoursesTab extends ConsumerWidget {
 
 class CourseListItem extends ConsumerWidget {
   final CourseModel course;
+  final Function(CourseModel)? onTap;
 
   const CourseListItem({
     super.key,
     required this.course,
+    this.onTap,
   });
 
   @override
@@ -105,12 +109,16 @@ class CourseListItem extends ConsumerWidget {
           ],
         ),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CourseDetailScreen(course: course),
-            ),
-          );
+          if (onTap != null) {
+            onTap!(course);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CourseDetailScreen(course: course),
+              ),
+            );
+          }
         },
       ),
     );

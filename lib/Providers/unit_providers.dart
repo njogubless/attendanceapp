@@ -83,7 +83,7 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final unitDocs = await _firestore.collection('units').where('courseId', isEqualTo:courseId).get();
+      final unitDocs = await _firestore.collection('courses').where('courseId', isEqualTo:courseId).get();
       final units = unitDocs.docs.map((doc) => UnitModel.fromFirestore(doc)).toList();
 
       state = state.copyWith(units:units, isLoading: false);
@@ -100,7 +100,7 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
     
     try {
       // Add unit to Firestore
-      final unitRef = _firestore.collection('units').doc();
+      final unitRef = _firestore.collection('courses').doc();
       final unitWithId = unit.copyWith(id: unitRef.id);
       
       await unitRef.set(unitWithId.toFirestore());
@@ -128,7 +128,7 @@ class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
   
   try {
     // Delete the unit document from Firestore
-    await _firestore.collection('units').doc(unitId).delete();
+    await _firestore.collection('courses').doc(unitId).delete();
     
     // Remove the unit ID from the course's units array
     await _firestore.collection('courses').doc(courseId).update({
@@ -153,7 +153,7 @@ Future<void> updateUnit(UnitModel updatedUnit) async {
   
   try {
     // Update the unit document in Firestore
-    await _firestore.collection('units').doc(updatedUnit.id).update(
+    await _firestore.collection('courses').doc(updatedUnit.id).update(
       updatedUnit.toFirestore()
     );
     
@@ -177,7 +177,7 @@ Future<void> toggleAttendanceStatus(String unitId, bool isActive) async {
   
   try {
     // Update the unit's attendance status in Firestore
-    await _firestore.collection('units').doc(unitId).update({
+    await _firestore.collection('courses').doc(unitId).update({
       'isAttendanceActive': isActive
     });
     

@@ -1,5 +1,8 @@
+import 'package:attendanceapp/Models/course_model.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
+
 import 'package:attendanceapp/Screens/Auth/Login_Screen.dart';
+import 'package:attendanceapp/Screens/course_detail_screen.dart';
 import 'package:attendanceapp/Screens/lecturer/components/attendance_tab.dart';
 import 'package:attendanceapp/Screens/lecturer/components/course_tab.dart';
 import 'package:attendanceapp/Screens/lecturer/components/profile_tab.dart';
@@ -17,15 +20,20 @@ class LecturerDashboard extends ConsumerStatefulWidget {
 class _LecturerDashboardState extends ConsumerState<LecturerDashboard> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const CoursesTab(),
-    const AttendanceTab(),
-    const ProfileTab(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userDataProvider);
+    
+    // Create the screens with navigation capabilities
+    final List<Widget> screens = [
+      CoursesTab(
+        onCourseSelected: (CourseModel course) {
+          _navigateToCourseDetail(context, course);
+        },
+      ),
+      const AttendanceTab(),
+      const ProfileTab(),
+    ];
 
     return user.when(
       data: (userData) {
@@ -51,7 +59,7 @@ class _LecturerDashboardState extends ConsumerState<LecturerDashboard> {
               ),
             ],
           ),
-          body: _screens[_selectedIndex],
+          body: screens[_selectedIndex],
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: (index) {
@@ -81,6 +89,15 @@ class _LecturerDashboardState extends ConsumerState<LecturerDashboard> {
       ),
       error: (_, __) => const Scaffold(
         body: Center(child: Text("Error loading user data")),
+      ),
+    );
+  }
+  
+  void _navigateToCourseDetail(BuildContext context, CourseModel course) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CourseDetailScreen(course: course),
       ),
     );
   }

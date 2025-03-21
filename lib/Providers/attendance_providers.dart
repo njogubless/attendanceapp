@@ -43,6 +43,27 @@ final activeAttendanceProvider = StreamProvider<List<AttendanceModel>>((ref) {
   return ref.read(attendanceServiceProvider).getActiveAttendance();
 });
 
+final isUnitAttendanceActiveProvider = Provider.family<bool, String>((ref, unitId) {
+  final activeAttendanceAsync = ref.watch(activeAttendanceProvider);
+  
+  return activeAttendanceAsync.when(
+    data: (activeAttendanceSessions) {
+      // Check if there's any active attendance session for this specific unit
+      return activeAttendanceSessions.any((attendance) => attendance.courseName == unitId);
+    },
+    loading: () => false, // Default to false while loading
+    error: (_, __) => false, // Default to false on error
+  );
+});
+
+
+
+ // Provider to track active attendance units
+final activeAttendanceUnitsProvider = StreamProvider<List<String>>((ref) {
+  final attendanceService = ref.read(attendanceServiceProvider);
+  return attendanceService.getActiveAttendanceUnits();
+});
+
 // State notifier provider for managing attendance
 final attendanceManagerProvider = StateNotifierProvider<AttendanceNotifier, AsyncValue<List<AttendanceModel>>>((ref) {
   return AttendanceNotifier(ref.read(attendanceServiceProvider));
@@ -121,4 +142,17 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
+
+ 
+
+// Provider to check if a specific unit has active attendance
+final isUnitAttendanceActiveProvider = Provider.family<bool, String>((ref, unitId) {
+  final activeUnitsAsyncValue = ref.watch(activeAttendanceUnitsProvider);
+  
+  return activeUnitsAsyncValue.when(
+    data: (activeUnits) => activeUnits.contains(unitId),
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
 }
