@@ -3,7 +3,7 @@ import 'package:attendanceapp/Features/Unit/unit_deatil_screen.dart';
 import 'package:attendanceapp/Features/Unit/unit_screen.dart';
 import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/Providers/auth_providers.dart';
-import 'package:attendanceapp/Providers/unit_providers.dart';
+import 'package:attendanceapp/Providers/unit_providers.dart' as unit_providers;
 import 'package:attendanceapp/Providers/units_provider.dart';
 
 import 'package:flutter/material.dart';
@@ -247,6 +247,6 @@ class UnitsTab extends ConsumerWidget {
   }
 
   void _toggleAttendance(BuildContext context, WidgetRef ref, String unitId, bool isActive) {
-    ref.read(unitManagerProvider.notifier).toggleAttendanceStatus(unitId, isActive);
+    ref.read(unit_providers.unitManagerProvider.notifier).toggleAttendanceStatus(unitId, isActive);
   }
 }

@@ -1,4 +1,3 @@
-// lib/Widgets/course_attendance.dart
 import 'package:attendanceapp/Models/attendance_model.dart';
 import 'package:attendanceapp/Models/course_model.dart';
 import 'package:attendanceapp/Providers/attendance_providers.dart';
@@ -141,6 +140,15 @@ class CourseAttendance extends ConsumerWidget {
       AttendanceModel? recentAttendance,
       bool hasRecentAttendance,
       bool isSubmittedToday) {
+    // Watch if attendance is active for this course
+    final isAttendanceActiveAsync =
+        ref.watch(isUnitAttendanceActiveProvider(course.id));
+
+    final bool isAttendanceActive = isAttendanceActiveAsync.when(
+        data: (value) => value,
+        error: (_, __) => false,
+        loading:() => false,);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
@@ -174,6 +182,36 @@ class CourseAttendance extends ConsumerWidget {
               children: [
                 Text('Course Code: ${course.courseCode}'),
                 Text('Lecturer: ${course.lecturerName}'),
+                // Show attendance status indicator
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: isAttendanceActive == true
+                              ? Colors.green
+                              : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isAttendanceActive
+                            ? 'Attendance Active'
+                            : 'Attendance Inactive',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isAttendanceActive == true
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -200,8 +238,14 @@ class CourseAttendance extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _buildAttendanceActionButton(context, ref, course,
-                    recentAttendance, hasRecentAttendance, isSubmittedToday),
+                _buildAttendanceActionButton(
+                    context,
+                    ref,
+                    course,
+                    recentAttendance,
+                    hasRecentAttendance,
+                    isSubmittedToday,
+                    isAttendanceActive),
               ],
             ),
           ),
@@ -216,7 +260,9 @@ class CourseAttendance extends ConsumerWidget {
       CourseModel course,
       AttendanceModel? recentAttendance,
       bool hasRecentAttendance,
-      bool isSubmittedToday) {
+      bool isSubmittedToday,
+      bool isAttendanceActive) {
+    // Check if attendance is already submitted for today and not rejected
     if (hasRecentAttendance &&
         isSubmittedToday &&
         recentAttendance!.status != AttendanceStatus.rejected) {
@@ -228,11 +274,13 @@ class CourseAttendance extends ConsumerWidget {
               ? Colors.orange
               : Colors.green);
     } else {
-      // Show active button to submit attendance
+      // Show active button to submit attendance only if attendance is active for this course
       return AttendanceButton(
           status: null,
-          onPressed: () => showAttendanceForm(context, ref, course),
-          color: Colors.green);
+          onPressed: isAttendanceActive
+              ? () => showAttendanceForm(context, ref, course)
+              : null, // Disabled if attendance is not active
+          color: isAttendanceActive ? Colors.green : Colors.grey);
     }
   }
 
@@ -263,5 +311,50 @@ class CourseAttendance extends ConsumerWidget {
         );
       },
     );
+  }
+}
+
+// You may need to create this widget if it doesn't exist yet
+class AttendanceButton extends StatelessWidget {
+  final AttendanceStatus? status;
+  final VoidCallback? onPressed;
+  final Color color;
+
+  const AttendanceButton({
+    Key? key,
+    required this.status,
+    required this.onPressed,
+    required this.color,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        disabledBackgroundColor: status == AttendanceStatus.pending
+            ? Colors.orange.withOpacity(0.6)
+            : (status == AttendanceStatus.approved
+                ? Colors.green.withOpacity(0.6)
+                : Colors.grey.withOpacity(0.6)),
+      ),
+      child: Text(
+        _getButtonText(),
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  String _getButtonText() {
+    if (status == null) {
+      return 'Sign Attendance';
+    } else if (status == AttendanceStatus.pending) {
+      return 'Pending Approval';
+    } else if (status == AttendanceStatus.approved) {
+      return 'Attendance Approved';
+    } else {
+      return 'Sign Attendance';
+    }
   }
 }

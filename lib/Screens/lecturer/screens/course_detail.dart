@@ -120,13 +120,17 @@ class CourseDetailScreen extends ConsumerWidget {
     }
   }
 
-  Widget buildSignAttendanceButton(WidgetRef ref, String unitId, Function() onTap) {
-    final isAttendanceActive = ref.watch(isUnitAttendanceActiveProvider(unitId));
-    
-    return Visibility(
-      visible: isAttendanceActive,
-      replacement: const SizedBox.shrink(),
-      child: ElevatedButton(
+ Widget buildSignAttendanceButton(WidgetRef ref, String unitId, Function() onTap) {
+  final isAttendanceActiveAsync = ref.watch(isUnitAttendanceActiveProvider(unitId));
+  
+  return isAttendanceActiveAsync.when(
+    data: (isActive) {
+      // Only show the button if attendance is active
+      if (!isActive) {
+        return const SizedBox.shrink();
+      }
+      
+      return ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green,
@@ -136,7 +140,10 @@ class CourseDetailScreen extends ConsumerWidget {
           ),
         ),
         child: const Text('Sign Attendance'),
-      ), // Don't take up space when hidden
-    );
-  }
+      );
+    },
+    loading: () => const SizedBox.shrink(), // Don't show while loading
+    error: (_, __) => const SizedBox.shrink(), // Don't show on error
+  );
+}
 }

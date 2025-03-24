@@ -121,7 +121,7 @@ class AttendanceService {
   Future<void> activateAttendanceForUnit(String unitId) async {
     try {
       // First, update the unit record
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'isAttendanceActive': true,
       });
       
@@ -146,7 +146,7 @@ class AttendanceService {
   Future<void> deactivateAttendanceForUnit(String unitId) async {
     try {
       // First, update the unit record
-      await _firestore.collection('units').doc(unitId).update({
+      await _firestore.collection('courses').doc(unitId).update({
         'isAttendanceActive': false,
       });
       
@@ -181,7 +181,7 @@ class AttendanceService {
   }
   Stream<List<String>> getActiveAttendanceUnits() {
     return FirebaseFirestore.instance
-        .collection('units')
+        .collection('courses')
         .where('isAttendanceActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) => 
@@ -191,9 +191,19 @@ class AttendanceService {
   // Toggle attendance activation for a unit
   Future<void> setUnitAttendanceActive(String unitId, bool isActive) async {
     return FirebaseFirestore.instance
-        .collection('units')
+        .collection('courses')
         .doc(unitId)
         .update({'isAttendanceActive': isActive});
   }
+
+
+  // In AttendanceService class
+Stream<bool> isAttendanceActiveForUnit(String unitId) {
+  return _firestore
+      .collection('courses')
+      .doc(unitId)
+      .snapshots()
+      .map((doc) => doc.data()?['isAttendanceActive'] ?? false);
+}
 
 }

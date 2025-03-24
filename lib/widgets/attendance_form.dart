@@ -129,6 +129,7 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
               status: AttendanceStatus.pending,
               studentComments: commentController.text,
               studentEmail: emailController.text,
+              registrationNumber: registrationNumberController.text
             );
 
             widget.onSubmit(attendance);

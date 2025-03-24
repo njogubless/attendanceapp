@@ -157,16 +157,18 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
             DataColumn(label: Text('Time')),
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Comments')),
+            DataColumn(label: Text('Actions')),
           ],
           rows: attendanceList.map((attendance) {
             return DataRow(
               cells: [
-                DataCell(Text(attendance.studentId)),
+                DataCell(Text(attendance.registrationNumber)),
                 DataCell(Text(attendance.studentName)),
                 DataCell(Text(DateFormat('MMM dd, yyyy').format(attendance.date))),
                 DataCell(Text(DateFormat('HH:mm').format(attendance.date))),
                 DataCell(_buildStatusCell(attendance.status)),
                 DataCell(Text(attendance.lecturerComments)),
+                DataCell((_buildActionButtons(attendance))),
               ],
             );
           }).toList(),
@@ -174,6 +176,110 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
       ),
     );
   }
+
+Widget _buildActionButtons(AttendanceModel attendance) {
+  // Only show action buttons for pending attendance
+  if (attendance.status != AttendanceStatus.pending) {
+    return const Text('-');
+  }
+  
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+        tooltip: 'Approve',
+        onPressed: () => _approveAttendance(attendance.id),
+      ),
+      IconButton(
+        icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+        tooltip: 'Reject',
+        onPressed: () => _showRejectDialog(attendance.id),
+      ),
+    ],
+  );
+}
+
+
+Future<void> _approveAttendance(String attendanceId) async {
+  try {
+    await ref.read(attendanceManagerProvider.notifier).approveAttendance(attendanceId);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Attendance approved successfully')),
+    );
+    // Refresh data
+    _loadAttendanceData();
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error approving attendance: $e')),
+    );
+  }
+}
+
+Future<void> _showRejectDialog(String attendanceId) async {
+  final commentController = TextEditingController();
+  
+  return showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Reject Attendance'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Please provide a reason for rejection:'),
+          const SizedBox(height: 16),
+          TextField(
+            controller: commentController,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter comments',
+            ),
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _rejectAttendance(attendanceId, commentController.text);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Reject'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _rejectAttendance(String attendanceId, String comments) async {
+  if (comments.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please provide comments for rejection')),
+    );
+    return;
+  }
+  
+  try {
+    await ref.read(attendanceManagerProvider.notifier).rejectAttendance(attendanceId, comments);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Attendance rejected')),
+    );
+    // Refresh data
+    _loadAttendanceData();
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error rejecting attendance: $e')),
+    );
+  }
+}
 
   Widget _buildStatusCell(AttendanceStatus status) {
     Color color;
@@ -341,7 +447,7 @@ final filteredAttendance = attendanceList != null ? attendanceList.where((attend
               headers: ['Reg. Number', 'Student Name', 'Date', 'Time', 'Status'],
               data: filteredAttendance.map((attendance) {
                 return [
-                  attendance.studentId,
+                  attendance.registrationNumber,
                   attendance.studentName,
                   DateFormat('MMM dd, yyyy').format(attendance.date),
                   DateFormat('HH:mm').format(attendance.date),

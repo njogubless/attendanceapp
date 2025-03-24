@@ -43,20 +43,11 @@ final activeAttendanceProvider = StreamProvider<List<AttendanceModel>>((ref) {
   return ref.read(attendanceServiceProvider).getActiveAttendance();
 });
 
-final isUnitAttendanceActiveProvider = Provider.family<bool, String>((ref, unitId) {
-  final activeAttendanceAsync = ref.watch(activeAttendanceProvider);
-  
-  return activeAttendanceAsync.when(
-    data: (activeAttendanceSessions) {
-      // Check if there's any active attendance session for this specific unit
-      return activeAttendanceSessions.any((attendance) => attendance.courseName == unitId);
-    },
-    loading: () => false, // Default to false while loading
-    error: (_, __) => false, // Default to false on error
-  );
+
+// Check if attendance is active for a unit
+final isUnitAttendanceActiveProvider = StreamProvider.family<bool, String>((ref, unitId) {
+  return ref.read(attendanceServiceProvider).isAttendanceActiveForUnit(unitId);
 });
-
-
 
  // Provider to track active attendance units
 final activeAttendanceUnitsProvider = StreamProvider<List<String>>((ref) {
@@ -126,33 +117,29 @@ class AttendanceNotifier extends StateNotifier<AsyncValue<List<AttendanceModel>>
     }
   }
 
-  // New methods for attendance activation
-  Future<void> activateAttendanceForUnit(String unitId) async {
+   Future<void> activateAttendanceForUnit(String unitId) async {
+    state = const AsyncValue.loading();
     try {
       await _attendanceService.activateAttendanceForUnit(unitId);
+      state = AsyncValue.data([]);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+      throw e;
     }
   }
 
   Future<void> deactivateAttendanceForUnit(String unitId) async {
+    state = const AsyncValue.loading();
     try {
       await _attendanceService.deactivateAttendanceForUnit(unitId);
+      state =  AsyncValue.data([]);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+      throw e;
     }
   }
 
  
 
-// Provider to check if a specific unit has active attendance
-final isUnitAttendanceActiveProvider = Provider.family<bool, String>((ref, unitId) {
-  final activeUnitsAsyncValue = ref.watch(activeAttendanceUnitsProvider);
-  
-  return activeUnitsAsyncValue.when(
-    data: (activeUnits) => activeUnits.contains(unitId),
-    loading: () => false,
-    error: (_, __) => false,
-  );
-});
+
 }

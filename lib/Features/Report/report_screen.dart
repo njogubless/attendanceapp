@@ -376,12 +376,12 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
       
       // Prepare CSV data
       List<List<dynamic>> csvData = [
-        ['Student Name', 'Registration Number', 'Date', 'Time', 'Status']
+        [ 'Registration Number', 'Date', 'Time', 'Status']
       ];
       
       for (var attendance in filteredAttendances) {
         csvData.add([
-          attendance.studentName,
+          //attendance.studentName,
           attendance.registrationNumber,
           DateFormat.yMMMd().format(attendance.attendanceDate.toDate()),
           DateFormat.Hm().format(attendance.attendanceDate.toDate()),

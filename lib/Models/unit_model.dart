@@ -92,4 +92,24 @@ class UnitModel {
       courseId: courseId ?? this.courseId,
     );
   }
+
+  // In your UnitModel class
+factory UnitModel.fromMap(String id, Map<String, dynamic> map) {
+  return UnitModel(
+    id: id,
+    name: map['name'] ?? '',
+    code: map['code'] ?? '',
+    lecturerId: map['lecturerId'] ?? '',
+    lecturerName: map['lecturerName'] ?? '',
+    courseId: map['courseId'] ?? '',
+    description: map['description'] ?? '',
+    status: UnitStatus.values.firstWhere(
+      (e) => e.toString() == 'UnitStatus.${map['status'] ?? 'pending'}',
+      orElse: () => UnitStatus.pending,
+    ),
+    isAttendanceActive: map['isAttendanceActive'] ?? false,
+    adminComments: map['adminComments'] ?? '',
+    createdAt: map['createdAt'] ?? Timestamp.now(),
+  );
+}
 }

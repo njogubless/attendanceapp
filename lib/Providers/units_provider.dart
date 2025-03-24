@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:attendanceapp/Models/unit_model.dart';
 import 'package:attendanceapp/services/unit_service.dart';
@@ -18,11 +19,11 @@ final approvedUnitsProvider = StreamProvider<List<UnitModel>>((ref) {
   return ref.read(unitServiceProvider).getApprovedUnits();
 });
 
-// State notifier for unit management
-// final unitManagerProvider =
-//     StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
-//   return UnitNotifier(ref.read(unitServiceProvider));
-// });
+//State notifier for unit management;
+final unitManagerProvider =
+    StateNotifierProvider<UnitNotifier, AsyncValue<List<UnitModel>>>((ref) {
+  return UnitNotifier(ref.read(unitServiceProvider));
+});
 
 class UnitNotifier extends StateNotifier<AsyncValue<List<UnitModel>>> {
   final UnitService _unitService;

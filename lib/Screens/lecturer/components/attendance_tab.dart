@@ -11,26 +11,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-
-final pendingAttendanceProvider = FutureProvider.family<List<AttendanceModel>, String>((ref, lecturerId) async {
-  final attendanceService = ref.read(attendanceServiceProvider); // Assuming you have this provider
+final pendingAttendanceProvider =
+    FutureProvider.family<List<AttendanceModel>, String>(
+        (ref, lecturerId) async {
+  final attendanceService =
+      ref.read(attendanceServiceProvider); // Assuming you have this provider
   try {
     return await attendanceService.getPendingAttendanceForLecturer(lecturerId);
   } catch (e) {
     throw e;
   }
 });
+
 class AttendanceTab extends ConsumerWidget {
   const AttendanceTab({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userData = ref.watch(userDataProvider).value;
-    
+
     if (userData == null) {
       return const Center(child: Text("No user data found"));
     }
-    
+
     final unitsStream = ref.watch(lecturerUnitsProvider(userData.id));
     final pendingAttendance = ref.watch(pendingAttendanceProvider(userData.id));
 
@@ -77,19 +80,24 @@ class AttendanceTab extends ConsumerWidget {
                                 children: [
                                   Text(attendance.unitName ?? 'Unknown Unit'),
                                   Text(DateFormat('MMM dd, yyyy - HH:mm')
-                                      .format(attendance.attendanceDate.toDate())),
+                                      .format(
+                                          attendance.attendanceDate.toDate())),
                                 ],
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.check, color: Colors.green),
-                                    onPressed: () => _approveAttendance(context, ref, attendance),
+                                    icon: const Icon(Icons.check,
+                                        color: Colors.green),
+                                    onPressed: () => _approveAttendance(
+                                        context, ref, attendance),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.red),
-                                    onPressed: () => _rejectAttendance(context, ref, attendance),
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.red),
+                                    onPressed: () => _rejectAttendance(
+                                        context, ref, attendance),
                                   ),
                                 ],
                               ),
@@ -97,8 +105,10 @@ class AttendanceTab extends ConsumerWidget {
                           },
                         );
                       },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (error, stack) => Center(child: Text('Error: $error')),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (error, stack) =>
+                          Center(child: Text('Error: $error')),
                     ),
                   ),
                 ],
@@ -134,17 +144,21 @@ class AttendanceTab extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Switch(
-                              value: unit.isAttendanceActive,
-                              onChanged: (value) => _toggleAttendance(ref, unit.id, value),
-                            ),
+                                value: unit.isAttendanceActive,
+                                onChanged: (value) {
+                                  print(" Toggling attendance for ${unit.name} to $value");
+                                  _toggleAttendance(context, ref, unit.id, value);
+                                }),
                             IconButton(
                               icon: const Icon(Icons.assessment),
-                              onPressed: () => _navigateToAttendanceReport(context, unit.id),
+                              onPressed: () =>
+                                  _navigateToAttendanceReport(context, unit.id),
                               tooltip: 'Attendance Report',
                             ),
                             IconButton(
                               icon: const Icon(Icons.arrow_forward),
-                              onPressed: () => _navigateToUnitDetail(context, unit.id),
+                              onPressed: () =>
+                                  _navigateToUnitDetail(context, unit.id),
                             ),
                           ],
                         ),
@@ -162,7 +176,8 @@ class AttendanceTab extends ConsumerWidget {
     );
   }
 
-  void _approveAttendance(BuildContext context, WidgetRef ref, AttendanceModel attendance) {
+  void _approveAttendance(
+      BuildContext context, WidgetRef ref, AttendanceModel attendance) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -176,11 +191,10 @@ class AttendanceTab extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(attendanceManagerProvider.notifier)
-                .updateAttendanceStatus(
-                  attendance.id, 
-                  AttendanceStatus.approved.toString()
-                );
+              ref
+                  .read(attendanceManagerProvider.notifier)
+                  .updateAttendanceStatus(
+                      attendance.id, AttendanceStatus.approved.toString());
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('Approve'),
@@ -190,7 +204,8 @@ class AttendanceTab extends ConsumerWidget {
     );
   }
 
-  void _rejectAttendance(BuildContext context, WidgetRef ref, AttendanceModel attendance) {
+  void _rejectAttendance(
+      BuildContext context, WidgetRef ref, AttendanceModel attendance) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -204,11 +219,10 @@ class AttendanceTab extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(attendanceManagerProvider.notifier)
-                .updateAttendanceStatus(
-                  attendance.id, 
-                  AttendanceStatus.rejected.toString()
-                );
+              ref
+                  .read(attendanceManagerProvider.notifier)
+                  .updateAttendanceStatus(
+                      attendance.id, AttendanceStatus.rejected.toString());
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Reject'),
@@ -218,16 +232,57 @@ class AttendanceTab extends ConsumerWidget {
     );
   }
 
-  void _toggleAttendance(WidgetRef ref, String courseId, bool isActive) {
-    final notifier = ref.read(attendanceManagerProvider.notifier);
-    
-    if (isActive) {
-      notifier.activateAttendanceForUnit(courseId);
-    } else {
-      notifier.deactivateAttendanceForUnit(courseId);
-    }
-  }
+void _toggleAttendance(BuildContext context, WidgetRef ref, String unitId, bool isActive) {
+  final notifier = ref.read(attendanceManagerProvider.notifier);
+  
+  // Show a loading indicator
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Updating attendance status..."),
+      duration: Duration(seconds: 2),
+    ),
+  );
 
+  if (isActive) {
+    notifier.activateAttendanceForUnit(unitId).then((_) {
+      // Force a refresh of the units list
+      ref.refresh(lecturerUnitsProvider(ref.read(userDataProvider).value?.id ?? ''));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Attendance activated successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $error"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
+  } else {
+    notifier.deactivateAttendanceForUnit(unitId).then((_) {
+      // Force a refresh of the units list
+      ref.refresh(lecturerUnitsProvider(ref.read(userDataProvider).value?.id ?? ''));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Attendance deactivated successfully"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $error"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
+  }
+}
   void _navigateToUnitDetail(BuildContext context, String unitId) {
     Navigator.push(
       context,
@@ -241,7 +296,9 @@ class AttendanceTab extends ConsumerWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AttendanceReportScreen(courseId: unitId,),
+        builder: (context) => AttendanceReportScreen(
+          courseId: unitId,
+        ),
       ),
     );
   }
