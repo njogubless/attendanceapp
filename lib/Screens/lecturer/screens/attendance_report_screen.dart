@@ -151,6 +151,7 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
         scrollDirection: Axis.horizontal,
         child: DataTable(
           columns: const [
+             DataColumn(label: Text(' Course Name')),
             DataColumn(label: Text('Reg. Number')),
             DataColumn(label: Text('Student Name')),
             DataColumn(label: Text('Date')),
@@ -162,12 +163,13 @@ class _AttendanceReportScreenState extends ConsumerState<AttendanceReportScreen>
           rows: attendanceList.map((attendance) {
             return DataRow(
               cells: [
+                DataCell(Text(attendance.courseName)),
                 DataCell(Text(attendance.registrationNumber)),
                 DataCell(Text(attendance.studentName)),
                 DataCell(Text(DateFormat('MMM dd, yyyy').format(attendance.date))),
                 DataCell(Text(DateFormat('HH:mm').format(attendance.date))),
                 DataCell(_buildStatusCell(attendance.status)),
-                DataCell(Text(attendance.lecturerComments)),
+                DataCell(Text(attendance.studentComments)),
                 DataCell((_buildActionButtons(attendance))),
               ],
             );
@@ -375,7 +377,7 @@ Future<void> _rejectAttendance(String attendanceId, String comments) async {
               headers: ['Reg. Number', 'Student Name', 'Date', 'Time', 'Status'],
               data: filteredAttendance.map((attendance) {
                 return [
-                  attendance.studentId,
+                  attendance.registrationNumber,
                   attendance.studentName,
                   DateFormat('MMM dd, yyyy').format(attendance.date),
                   DateFormat('HH:mm').format(attendance.date),

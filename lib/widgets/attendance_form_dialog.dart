@@ -26,6 +26,7 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
   final locationController = TextEditingController();
   final reasonController = TextEditingController();
   final registrtaionNumber = TextEditingController();
+  final studentName = TextEditingController();
   bool isPresent = true;
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
@@ -78,7 +79,7 @@ class _AttendanceFormDialogState extends State<AttendanceFormDialog> {
       unitId: widget.course.id, // Using course.id as unitId
       unitName: widget.course.name,
       studentId: widget.studentId,
-      studentName: widget.studentName,
+      studentName: studentName.text,
       studentEmail: emailController.text, // Using the email field
       courseName: widget.course.name,
       lecturerId: '', // You might need to pass this from somewhere else
